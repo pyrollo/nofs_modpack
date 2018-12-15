@@ -44,7 +44,7 @@ function nofs.stack_get_top(player)
 end
 
 -- Find a form by its id
-function nofs.stack_get_by_id(player, form_id) 
+function nofs.stack_get_by_id(player, form_id)
 	for _, form in pairs(get_player_stack(player)) do
 		if form.id == form_id then
 			return form
@@ -78,7 +78,5 @@ function nofs.stack_add(player, form)
 		if not form.id then
 			form.id = nofs.name..":form"..#stack
 		end
-print (form.id)
 	end
 end
-

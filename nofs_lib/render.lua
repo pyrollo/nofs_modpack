@@ -186,7 +186,7 @@ widgets = {
 				return string.format("field[%s;%s;%s;%s]", fspossize(buffer, offset),
           buffer.id, (buffer.def.label or ""), (buffer.def.default or ""))
 			end
-		end
+		end,
 	},
 	label = {
     offset = { x = 0, y = 0.2 },
@@ -198,8 +198,24 @@ widgets = {
         return string.format("label[%s;%s]",
           fspos(buffer, offset), (buffer.def.label or ""))
 			end
-		end
+		end,
 	},
+  checkbox = {
+    needs_id = true,
+    rendering = function(buffer, offset)
+      return string.format("checkbox[%s;%s;%s;%s]",
+        fspos(buffer, offset), buffer.id, (buffer.def.label or ""),"true")
+    end,
+  },
+  inventory = {
+    rendering = function(buffer, offset)
+      return string.format("list[%s;%s;%s;]%s",
+        buffer.def.inventory or "current_player",
+        buffer.def.list or "main",
+        fspossize(buffer, offset),
+        buffer.def.listring and "listring[]" or "")
+    end,
+  },
 }
 
 -- Form rendering

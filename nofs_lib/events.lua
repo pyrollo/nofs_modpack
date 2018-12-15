@@ -37,10 +37,11 @@ end
 -- Generic trigger propagation
 minetest.register_on_player_receive_fields(
 	function(player, formname, fields)
-		-- Find form
+		-- Find form -- TODO: Manage case of unwanter form
 		local form = nofs.stack_get_by_id(player, formname)
 		if form then
 			-- Trigger on_click event
+			
 			nofs.trigger_event(player, form, fields, form, 'action')
 
 			-- If form exit, unstack

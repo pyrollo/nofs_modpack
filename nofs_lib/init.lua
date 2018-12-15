@@ -23,7 +23,9 @@ nofs.name = minetest.get_current_modname()
 nofs.path = minetest.get_modpath(nofs.name)
 
 dofile(nofs.path..'/stack.lua')
-dofile(nofs.path..'/render.lua')
-dofile(nofs.path..'/events.lua')
+dofile(nofs.path..'/widgets.lua')
+dofile(nofs.path..'/form.lua')
 dofile(nofs.path..'/main.lua')
 
+--dofile(nofs.path..'/render.lua')
+--dofile(nofs.path..'/events.lua')

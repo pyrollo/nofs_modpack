@@ -1,21 +1,21 @@
 --[[
-    nofs_demo for Minetest - Demonstration mod for nofs_lib
-    (c) Pierre-Yves Rollo
+	nofs_demo for Minetest - Demonstration mod for nofs_lib
+	(c) Pierre-Yves Rollo
 
-    This file is part of nofs_lib.
+	This file is part of nofs_lib.
 
-    signs is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	signs is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    signs is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	signs is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with signs.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with signs.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
 nofs_demo = {}
@@ -93,7 +93,7 @@ end)
 
 -- TODO :: PROBLEME : Les tableaux associatifs ne sont pas parcourrus dans l'ordre
 
-local main_form = {
+local main_form = nofs.new_form({
 	id = 'test_form',
 	type = 'vbox',
 	 { type = 'hbox',
@@ -111,27 +111,14 @@ local main_form = {
 		{	type = 'button', height = 1,	width = 1, label = 'Exit', exit = 'true',
 			on_action = nofs.close_form, },
 	},
-	{ type = "checkbox", id = "chk1", label = "Select this", },
-}
+	{ type = "checkbox", width = 3, height =1, id = "chk1", label = "Select this", },
+	{ type = "inventory", width = 7, height = 5, inventory = "current_player", list="main", listring=true },
+})
 
-local function is_player_connected(name)
-    if minetest.player_exists(name)
-    then
-        for _,player in ipairs(minetest.get_connected_players()) do
-            if name == player:get_player_name() then
-				return true
-            end
-        end
-    end
-    return false
-end
 
 minetest.register_chatcommand("nofs", { params = "", description = "NOFS demo",
     func = function(name, param)
-            if is_player_connected(name)
-            then
-                nofs.show_form(name, main_form)
-            end
-        end,
+	      nofs.show_form(name, main_form)
+	    end,
     }
 )
