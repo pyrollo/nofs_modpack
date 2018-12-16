@@ -29,10 +29,10 @@ function Form:new(def)
 		if element.id then
 			assert(ids[element.id] == nil,
 				'Id "'..element.id..'" already used in the same form.')
-			ids[element.id] = buffer
+			ids[element.id] = element
 		end
 
-		for index, child in ipairs(element) do
+		for _, child in ipairs(element) do
 			collect_ids(child, ids)
 		end
 	end
@@ -42,7 +42,7 @@ function Form:new(def)
 		local widget = nofs.get_widget(element.type)
 		assert(widget, 'Element type "'..element.type..'" unknown.')
 
-		if not element.id and widget.needs_id then
+		if not element.id and (widget.needs_id or widget.holds_value) then
 			local i = 1
 			while ids[element.type..i] do
 				i = i + 1

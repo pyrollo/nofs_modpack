@@ -48,9 +48,9 @@ A button can't have both **image** and **item** attributes. In such case **item*
 | no_prepend[] | Form level | Not started |
 | container[X,Y] | | Useless |
 | container_end[] | | Useless |
-| list[invloc;listname;X,Y;W,H;] | ? | Not started |
-| list[invloc;listname;X,Y;W,H;index] | ? | Not started |
-| listring[invloc;listname] | ? | Not started |
+| list[invloc;listname;X,Y;W,H;] | inventory | Done |
+| list[invloc;listname;X,Y;W,H;index] | inventory | Not started |
+| listring[invloc;listname] | inventory | Done |
 | listring[] | ? | Not started |
 | listcolors[bgcolor;bgcolorhover] | ? | Not started |
 | listcolors[bgcolor;bgcolorhover;border] | ? | Not started |
@@ -79,7 +79,7 @@ A button can't have both **image** and **item** attributes. In such case **item*
 | tabheader[X,Y;name;caption 1,caption 2,...,caption n;current_tab;transparent;draw_border] | ? | Not started |
 | textlist[X,Y;W,H;name;listelem 1,listelem 2,...,listelem n;selected idx;transparent] | ? | Not started |
 | box[X,Y;W,H;color] | vbox/hbox | Not started |
-| checkbox[X,Y;label] | checkbox | WIP |
+| checkbox[X,Y;label] | checkbox | Done |
 | dropdown[X,Y;W;name;item 1,item 2, ...,item n;selected idx] | ? | Not started |
 | scrollbar[X,Y;W,H;orientation;name;value] | ? | Not started |
 | table[X,Y;W,H;name;cell 1,cell 2,...,cell n;selected idx] | ? | Not started |

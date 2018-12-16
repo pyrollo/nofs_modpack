@@ -18,6 +18,14 @@
     along with signs.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
+local function calliffunc(fct, ...)
+	if type(fct) == 'function' then
+		return fct(...)
+	end
+end
+
+local fields_whitelist = { "quit", "key_enter", "key_enter_field" }
+
 -- Event management
 -- ================
 
@@ -37,22 +45,65 @@ end
 -- Generic trigger propagation
 minetest.register_on_player_receive_fields(
 	function(player, formname, fields)
-		-- Find form -- TODO: Manage case of unwanter form
-		local form = nofs.stack_get_by_id(player, formname)
-		if form then
-			-- Trigger on_click event
-			
-			nofs.trigger_event(player, form, fields, form, 'action')
+		if not minetest.is_player(player) then
+			return true
+		end
 
-			-- If form exit, unstack
-			if fields.quit == "true" then
-				-- Trigger on_close event
-				nofs.trigger_event(player, form, fields, form, 'close')
-				nofs.stack_remove(player)
-				local form = nofs.stack_get_top(player)
-				if form then
-					nofs.refresh_form(form, player)
+		local player_name = player:get_player_name()
+
+		local form = nofs.get_stack_top(player_name)
+		if form == nil then
+			return false -- Not managed by NoFS
+		end
+
+		if form.id ~= formname then
+			minetest.log('warning',
+				string.format('[nofs] Received fields for form "%s" but expected fields for "%s". Ignoring.',
+					formname, form.id))
+			nofs.clear_stack(player_name)
+			return false
+		end
+
+		-- Check fields
+		local suspicious = false
+		for key, value in pairs(fields) do
+			local element = form.ids[key]
+			if not fields_whitelist[key] and not element then
+				minetest.log('warning',
+					string.format('[nofs] Unwanted field "%s" for form "%s".', key, formname))
+				suspicious = true
+			end
+			if element then
+				local widget = nofs.get_widget(element.type)
+				if widget.holds_value then
+					if element.value ~= value then
+						calliffunc(element.on_changed)
+						element.value = value
+					end
 				end
+			end
+		end
+		if suspicious then
+			minetest.log('warning',
+				string.format('[nofs] Suspicious fields recieved from player "%s".', player_name))
+		end
+
+		-- Clicked events
+		for id, element in pairs(form.ids) do
+			if fields[id] then
+				calliffunc(element.on_clicked)
+			end
+		end
+
+		-- close event
+		-- If form exit, unstack
+		if fields.quit == "true" then
+			-- Trigger on_close event
+			nofs.trigger_event(player, form, fields, form, 'close')
+			nofs.stack_remove(player_name)
+			local form = nofs.get_stack_top(player_name)
+			if form then
+				nofs.refresh_form(form, player)
 			end
 		end
 	end

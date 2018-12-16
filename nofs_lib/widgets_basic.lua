@@ -18,21 +18,9 @@
 	along with signs.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-local widgets = {}
-
-function nofs.register_widget(type_name, def)
-	assert(widgets[type_name] == nil,
-		string.format('Widget type "%s" already registered.', type_name))
-	widgets[type_name] = table.copy(def)
-end
-
-function nofs.get_widget(type_name)
-	return widgets[type_name]
-end
-
 -- Standard offset position and size
 local function fspos(element, offset)
-	local widgetoffset = widgets[element.type].offset
+	local widgetoffset = nofs.get_widget(element.type).offset
 	if widgetoffset then
 		return string.format("%g,%g",
 			element.pos.x + offset.x + widgetoffset.x,
@@ -44,7 +32,7 @@ local function fspos(element, offset)
 end
 
 local function fspossize(element, offset)
-	local widgetoffset = widgets[element.type].offset
+	local widgetoffset = nofs.get_widget(element.type).offset
 	if widgetoffset then
 		return string.format("%g,%g;%g,%g",
 			element.pos.x + offset.x + widgetoffset.x,
@@ -56,69 +44,6 @@ local function fspossize(element, offset)
 			element.size.x, element.size.y)
 	end
 end
-
--- Sizing vbox and hbox and places child elements inside
---
-local function size_box(element, boxtype)
-	local main, other
-	local pos = 0 -- TODO:MARGIN
-	local size = 0
-
-	-- Process vbox and hbox the same way, just inverting coordinates
-	if boxtype == 'h' then
-		main = 'x' other = 'y'
-	else
-		main = 'y' other = 'x'
-	end
-
-	-- Main positionning and other size
-	for _, child in ipairs(element) do
-		child.pos = { [main] = pos, [other] = 0 }
-		pos = pos + child.size[main] -- TODO:Spacing
-		if child.size[other] > size then
-			size = child.size[other]
-		end
-	end
-
-	-- Other positionning
-	for _, child in ipairs(element) do
-		-- TODO: This is center, add left & right
-		child.pos[other] =
-			( size - child.size[other] ) / 2
-	end
-
-	element.size = { [main] = pos, [other] = size }
-end
-
--- Containers generic rendering
---
-local function render_container(element, offset)
-	local inneroffset = {
-		x = offset.x + element.pos.x,
-		y = offset.y + element.pos.y
-	}
-	local fs = ""
-	for _, child in ipairs(element) do
-		local widget = nofs.get_widget(child.type)
-		if widget.render then
-			fs = fs..widget.render(child, inneroffset)
-		end
-	end
-	return fs
-end
-
--- CONTAINERS WIDGETS
----------------------
-
-nofs.register_widget("vbox", {
-	size = function(element) size_box(element, 'v') end,
-	render = render_container,
-})
-
-nofs.register_widget("hbox", {
-	size = function(element) size_box(element, 'h') end,
-	render = render_container,
-})
 
 -- BASIC WIDGETS
 ----------------
@@ -168,12 +93,12 @@ nofs.register_widget("button", {
 			return string.format("item_image_button[%s;%s;%s;%s]",
 				fspossize(element, offset), element.item, element.id,
 				element.label or "")
-		else
+		else -- Using image buttons because normal buttons does not size vertically
 			if element.exit == "true" then
-				return string.format("button_exit[%s;%s;%s]",
+				return string.format("image_button_exit[%s;;%s;%s]",
 					fspossize(element, offset), element.id, element.label or "")
 			else
-				return string.format("button[%s;%s;%s]",
+				return string.format("image_button[%s;;%s;%s]",
 					fspossize(element, offset), element.id, element.label or "")
 			end
 		end
@@ -181,33 +106,26 @@ nofs.register_widget("button", {
 })
 
 nofs.register_widget("field", {
-	needs_id = true,
+	holds_value = true,
 	offset = { x = 0.3, y = 0.32 },
 	render = function(element, offset)
-		-- Some warnings
-		if element.hidden == 'true' then
-			if element.default ~= nil then
-				minetest.log('warning',
-					'Hidden field can\'t have a default value. Ignoring "default" attribute.')
-			end
-		end
-
 		-- Render
 		if element.hidden == 'true' then
 			return string.format("pwdfield[%s;%s;%s]", fspossize(element, offset),
 				element.id, (element.label or ""))
 		else
 			return string.format("field[%s;%s;%s;%s]", fspossize(element, offset),
-				element.id, (element.label or ""), (element.default or ""))
+				element.id, (element.label or ""), (element.value or ""))
 		end
 	end,
 })
 
 nofs.register_widget("checkbox", {
-	needs_id = true,
+	holds_value = true,
 	render = function(element, offset)
 		return string.format("checkbox[%s;%s;%s;%s]",
-			fspos(element, offset), element.id, (element.label or ""),"true")
+			fspos(element, offset), element.id, (element.label or ""),
+			element.value == "true" and "true" or "fasle")
 	end,
 })
 

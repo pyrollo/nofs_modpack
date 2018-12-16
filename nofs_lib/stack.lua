@@ -24,48 +24,36 @@
 
 local stacks = {}
 
-local function get_player_stack(player)
-	if type(player) ~= "string" then
-		player = player:get_player_name()
+local function get_stack(player_name)
+	if stacks[player_name] == nil then
+		stacks[player_name] = {}
 	end
-
-	if stacks[player] == nil then
-		stacks[player] = {}
-	end
-
-	return stacks[player]
+	return stacks[player_name]
 end
 
+function nofs.clear_stack(player_name)
+	stacks[player_name] = nil
+end
 
 -- Get top form
-function nofs.stack_get_top(player)
-	local stack = get_player_stack(player)
+function nofs.get_stack_top(player_name)
+	local stack = get_stack(player_name)
 	return stack[#stack]
 end
 
--- Find a form by its id
-function nofs.stack_get_by_id(player, form_id)
-	for _, form in pairs(get_player_stack(player)) do
-		if form.id == form_id then
-			return form
-		end
-	end
-	return nil
-end
-
 -- Remove top form from stack
-function nofs.stack_remove(player)
-	local stack = get_player_stack(player)
+function nofs.stack_remove(player_name)
+	local stack = get_stack(player_name)
 	if #stack then
 		table.remove(stack, #stack)
 	end
 end
 
 -- Add a form on top of the stack (and add some extra fields on form)
-function nofs.stack_add(player, form)
+function nofs.stack_add(player_name, form)
 	if form and type(form)=="table" then
 
-		local stack = get_player_stack(player)
+		local stack = get_stack(player_name)
 
 		stack[#stack + 1] = form
 
@@ -80,3 +68,5 @@ function nofs.stack_add(player, form)
 		end
 	end
 end
+
+minetest.register_on_leaveplayer(nofs.clear_stack)

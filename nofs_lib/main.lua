@@ -24,7 +24,7 @@
 -- Refreshes the top form
 function nofs.refresh_form(player)
 	local player = player
-	local form = nofs.stack_get_top(player)
+	local form = nofs.get_stack_top(player)
 	if type(player) ~= "string" then
 		player = player:get_player_name()
 	end
@@ -54,7 +54,7 @@ end
 
 -- Close top form
 function nofs.close_form(player)
-	local form = nofs.stack_get_top(player)
+	local form = nofs.get_stack_top(player)
 	if form then
 		-- Like if "esc" key was pressed -- TODO: Check this
 --		nofs.trigger_event(player, form, { quit = "true" }, form, 'close')
