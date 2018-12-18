@@ -25,6 +25,7 @@ local Form = {}
 --nofs.Form = Form
 
 function Form:new(def)
+	-- Here, element is a part of def, not instance
 	local function collect_ids(element, ids)
 		if element.id then
 			assert(ids[element.id] == nil,
@@ -37,6 +38,7 @@ function Form:new(def)
 		end
 	end
 
+	-- Here, element is a part of def, not instance
 	local function add_missing_ids_and_check_types(element, ids)
 		assert(element.type, 'Element must have a type.')
 		local widget = nofs.get_widget(element.type)
@@ -63,49 +65,90 @@ function Form:new(def)
 	end
 
 	local form = {
-		root = table.copy(def),
+		def = table.copy(def),
+		instance = {},
 		ids = {},
+		data = {},
 	}
 
-	form.root.type = form.root.type or "vbox"
-	form.root.pos = { x=0, y=0 }
+	form.def.type = form.def.type or "vbox"
+	form.instance.pos = { x=0, y=0 }
 
-	collect_ids(form.root, form.ids)
-	add_missing_ids_and_check_types(form.root, form.ids)
+	collect_ids(form.def, form.ids)
+	add_missing_ids_and_check_types(form.def, form.ids)
 
 	setmetatable(form, self)
 	self.__index = self
 	return form
 end
 
-function Form:render()
+function Form:render(data)
+	-- Here, element is a part of instance, not def
 	local function size_element(element)
 		-- first, size children (if any)
 		for _, child in ipairs(element) do
 			size_element(child)
 		end
 
-		local widget = nofs.get_widget(element.type)
-
-		if widget.size and type(widget.size) == 'function' then
+		if element.widget.size and type(element.widget.size) == 'function' then
 			-- Specific sizing method
-			widget.size(element)
-		elseif widget.size and type(widget.size) == 'table' then
+			element.widget.size(element)
+		elseif element.widget.size and type(element.widget.size) == 'table' then
 			-- Default size
-			element.size = {
-				x = element.width or widget.size.x,
-				y = element.height or widget.size.y,
+			element.element.size = {
+				x = element.def.width or element.widget.size.x,
+				y = element.def.height or element.widget.size.y,
 			}
 		else
-			element.size = { x = element.width, y = element.height }
+			element.size = { x = element.def.width, y = element.def.height }
 		end
 	end
 
+	local function create_instance(def, data)
+		local data = data
+		if type(data) ~= 'table' then
+			print("warning data not a table")
+			data = {}
+		end
+print("instance "..def.type)
+		local instance = { def = def, widget = nofs.get_widget(def.type),
+			data = data, pos = { x=0, y=0 } }
+		for _, childdef in ipairs(def) do
+			print("instance child "..childdef.type)
+			if childdef.data then
+				if data[childdef.data] and type(data[childdef.data]) == "table" then
+					-- Data has children, multiple instances
+					if #data[childdef.data] then
+						for _, childdata in ipairs(data[childdef.data]) do
+							print("multiinstance")
+							instance[#instance+1] = create_instance(childdef, childdata)
+						end
+					else
+						-- cas d'un enfant avec un data={} ne contenant que des champs
+						-- A vérifier l'utilité
+						print("cas bizare")
+						instance[#instance+1] = create_instance(childdef, data[childdef.data])
+					end
+				else
+					print("direct data")
+					-- Cas habituel d'un enfant adressant directement un champ des data
+					instance[#instance+1] = create_instance(childdef, data)
+				end
+			else
+				-- Cas d'un enfant sans data=
+				print("no data")
+				instance[#instance+1] = create_instance(childdef, data)
+			end
+		end
+		return instance
+	end
 
-	size_element(self.root)
+	-- Instance creation
+	self.instance = create_instance(self.def, data)
+	size_element(self.instance)
 
-	return string.format("size[%g,%g]%s", self.root.size.x, self.root.size.y,
-		nofs.get_widget(self.root.type).render(self.root, {x = 0, y = 0}))
+	return string.format("size[%g,%g]%s", self.instance.size.x, self.instance.size.y,
+		self.instance.widget.render(self.instance, {x = 0, y = 0}))
 end
 
 function nofs.is_form(form)

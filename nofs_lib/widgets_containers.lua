@@ -18,7 +18,6 @@
 	along with signs.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-
 local function align_position(container_size, element_size, offset, halign, valign)
 	local x, y
 	if valign == 'top' then
@@ -65,7 +64,7 @@ local function size_box(element, boxtype)
 		child.pos = align_position(
 			{ [main] = child.size[main], [other] = size },
 			child.size, { [main] = pos, [other] = 0 },
-			element.halign or "center", element.valign or "middle")
+			element.def.halign or "center", element.def.valign or "middle")
 
 		pos = pos + child.size[main] -- TODO:Spacing
 
@@ -80,17 +79,22 @@ end
 -- Containers generic rendering
 --
 local function render_container(element, offset)
+
 	local inneroffset = {
 		x = offset.x + element.pos.x,
 		y = offset.y + element.pos.y
 	}
+
 	local fs = ""
 	for _, child in ipairs(element) do
-		local widget = nofs.get_widget(child.type)
-		if widget.render then
-			fs = fs..widget.render(child, inneroffset)
+		print('element '..element.def.type)
+		if element.widget.render then
+			print('render')
+			fs = fs..element.widget.render(child, inneroffset)
 		end
 	end
+	print(fs)
+	print ('===')
 	return fs
 end
 
@@ -121,9 +125,9 @@ nofs.register_widget("grid", {
 		-- Size rows and columns
 		rownum = 0
 		for _, row in ipairs(element) do
-			assert(row.type == 'gridrow',
+			assert(row.def.type == 'gridrow',
 				string.format('[nofs] grid elements should only have gridrow children (got a "%s").',
-					row.type))
+					row.def.type))
 			rownum = rownum + 1
 			rowsizes[rownum] = 0
 			colnum = 0
@@ -147,8 +151,8 @@ nofs.register_widget("grid", {
 				child.pos = align_position(
 					{ x=colsizes[colnum], y=rowsizes[rownum] },
 					child.size, { x = x, y = 0 },
-					row.halign or element.halign or "center",
-					row.valign or element.valign or "middle")
+					row.def.halign or element.def.halign or "center",
+					row.def.valign or element.def.valign or "middle")
 				x = x + colsizes[colnum]
 				colnum = colnum + 1
 			end

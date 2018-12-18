@@ -46,39 +46,45 @@ local main_form2 = nofs.new_form({
 	{ type = "inventory", width = 7, height = 5, inventory = "current_player", list="main", listring=true },
 })
 
+local data = {
+	player = "toto",
+	attribute = "xxx",
+	meta = {
+		{ name = "field1",	value = "xxx" },
+		{ name = "field2",	value = "YYY" },
+		{ name = "field3",	value = "zzz" },
+		{ name = "field4",	value = "aaa" },
+		{ name = "field5",	value = "bbb" },
+	},
+}
+
 local main_form = nofs.new_form({
 	id = 'test_form',
-	type = 'grid',
+	type = 'vbox',
 	{
-		type = 'gridrow',
-		{ type = 'label', width = 2, height = 1, label = 'Label 1',	},
-		{	id = 'field 1',	type = 'field',	height = 1,	width = 4 },
-	 	{	type = 'button', width = 2, height = 1, label = 'Test',
-			on_clicked = function() print ('Button test clicked') end,
-	 	},
+		type = 'hbox',
+		{ type = 'label', width = 2, height = 1, value = "Player name",	},
+		{	id = 'field 1',	type = 'field',	height = 1,	width = 4, data = "player" },
 	},
 	{
-		type = 'gridrow',
-		{ type = 'label', width = 2, height = 1, label = 'Label 2',	},
-		{	id = 'field 2',	type = 'field',	height = 1,	width = 6 },
-		{	type = 'button', width = 1, height = 1, label = 'Test 2',
-			on_clicked = function() print ('Button testé clicked') end,
-		},
+		type = 'hbox',
+		data = "meta", -- Si meta contient des enfants, repete, sinon utilise ses champs
+		{ type = 'label', width = 2, height = 1, data="name"},
+		{ type = 'field', width = 2, height = 1, data="value"},
 	},
-	{
-		type = 'gridrow',
-		{ type = 'label', width = 2, height = 1, label = 'Label 3',	},
-		{	id = 'field 3',	type = 'field',	height = 2,	width = 1 },
-		{	type = 'button', width = 2, height = 2, label = 'Test 3',
-			on_clicked = function() print ('Button clicked') end,
-		},
+	{	type = 'button', height = 1,	width = 1, label = 'Exit', exit = 'true',
+		on_clicked = nofs.close_form,
 	},
 })
 
 
 minetest.register_chatcommand("nofs", { params = "", description = "NOFS demo",
-    func = function(name, param)
-	      nofs.show_form(name, main_form)
-	    end,
-    }
-)
+	func = function(name, param)
+		local fs = main_form:render(data)
+		print()
+		print(fs)
+		print()
+		minetest.show_formspec(name, 'nofs:text', main_form:render(data))
+--	      nofs.show_form(name, main_form)
+	end,
+})

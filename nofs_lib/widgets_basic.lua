@@ -51,12 +51,17 @@ end
 nofs.register_widget("label", {
 	offset = { x = 0, y = 0.2 },
 	render = function(element, offset)
+		local label = element.def.label or ""
+		if element.def.data then
+			-- TODO: check string/number but not table/function ?
+			label = element.data[element.def.data]
+		end
+		label = minetest.formspec_escape(label)
+
 		if element.direction and element.direction == 'vertical' then
-			return string.format("vertlabel[%s;%s]",
-				fspos(element, offset), (element.label or ""))
+			return string.format("vertlabel[%s;%s]", fspos(element, offset), label)
 		else
-			return string.format("label[%s;%s]",
-				fspos(element, offset), (element.label or ""))
+			return string.format("label[%s;%s]", fspos(element, offset), label)
 		end
 	end,
 })
@@ -109,13 +114,19 @@ nofs.register_widget("field", {
 	holds_value = true,
 	offset = { x = 0.3, y = 0.32 },
 	render = function(element, offset)
+		local value = element.def.value or ""
+		if element.def.data then
+			value = element.data[element.def.data]
+		end
+		value = minetest.formspec_escape(value)
+
 		-- Render
 		if element.hidden == 'true' then
 			return string.format("pwdfield[%s;%s;%s]", fspossize(element, offset),
-				element.id, (element.label or ""))
+				element.id, value)
 		else
 			return string.format("field[%s;%s;%s;%s]", fspossize(element, offset),
-				element.id, (element.label or ""), (element.value or ""))
+				element.id, (element.def.label or ""), value)
 		end
 	end,
 })
