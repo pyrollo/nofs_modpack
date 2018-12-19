@@ -20,7 +20,7 @@
 
 -- Standard offset position and size
 local function fspos(element, offset)
-	local widgetoffset = nofs.get_widget(element.type).offset
+	local widgetoffset = element.widget.offset
 	if widgetoffset then
 		return string.format("%g,%g",
 			element.pos.x + offset.x + widgetoffset.x,
@@ -32,7 +32,7 @@ local function fspos(element, offset)
 end
 
 local function fspossize(element, offset)
-	local widgetoffset = nofs.get_widget(element.type).offset
+	local widgetoffset = element.widget.offset
 	if widgetoffset then
 		return string.format("%g,%g;%g,%g",
 			element.pos.x + offset.x + widgetoffset.x,

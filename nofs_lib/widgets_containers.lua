@@ -87,14 +87,10 @@ local function render_container(element, offset)
 
 	local fs = ""
 	for _, child in ipairs(element) do
-		print('element '..element.def.type)
-		if element.widget.render then
-			print('render')
-			fs = fs..element.widget.render(child, inneroffset)
+		if child.widget.render then
+			fs = fs..child	.widget.render(child, inneroffset)
 		end
 	end
-	print(fs)
-	print ('===')
 	return fs
 end
 

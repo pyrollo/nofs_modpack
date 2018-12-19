@@ -107,36 +107,30 @@ function Form:render(data)
 	local function create_instance(def, data)
 		local data = data
 		if type(data) ~= 'table' then
-			print("warning data not a table")
+			minetest.log("warning", "[nofs] data passed to create_instance is not a table")
 			data = {}
 		end
-print("instance "..def.type)
 		local instance = { def = def, widget = nofs.get_widget(def.type),
 			data = data, pos = { x=0, y=0 } }
 		for _, childdef in ipairs(def) do
-			print("instance child "..childdef.type)
 			if childdef.data then
 				if data[childdef.data] and type(data[childdef.data]) == "table" then
 					-- Data has children, multiple instances
 					if #data[childdef.data] then
 						for _, childdata in ipairs(data[childdef.data]) do
-							print("multiinstance")
 							instance[#instance+1] = create_instance(childdef, childdata)
 						end
 					else
 						-- cas d'un enfant avec un data={} ne contenant que des champs
 						-- A vérifier l'utilité
-						print("cas bizare")
 						instance[#instance+1] = create_instance(childdef, data[childdef.data])
 					end
 				else
-					print("direct data")
 					-- Cas habituel d'un enfant adressant directement un champ des data
 					instance[#instance+1] = create_instance(childdef, data)
 				end
 			else
 				-- Cas d'un enfant sans data=
-				print("no data")
 				instance[#instance+1] = create_instance(childdef, data)
 			end
 		end
