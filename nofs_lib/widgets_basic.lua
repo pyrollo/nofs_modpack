@@ -48,6 +48,14 @@ end
 -- BASIC WIDGETS
 ----------------
 
+-- button
+-- ======
+-- Attributes:
+--  - width, height
+--	- label
+-- Triggers:
+--  none
+
 nofs.register_widget("label", {
 	offset = { x = 0, y = 0.2 },
 	render = function(element, offset)
@@ -66,12 +74,26 @@ nofs.register_widget("label", {
 	end,
 })
 
+-- button
+-- ======
+-- Attributes:
+--  - width, height
+--	- label
+--  - image
+--  - item
+--  - exit
+-- Triggers:
+--  - on_clicked
+
 nofs.register_widget("button", {
 	needs_id = true,
+	handle_field_event = function(element, field)
+		nofs.calliffunc(element.def.on_clicked) -- TODO:ARGUMENTS ?
+	end
 	render = function(element, offset)
 		-- Some warnings
-		if element.item ~= nil then
-			if element.image ~= nil then
+		if element.def.item ~= nil then
+			if element.def.image ~= nil then
 				minetest.log('warning',
 					'Button can\'t have "image" and "item" attributes at once. '..
 					'Ignoring "item" attribute.')
@@ -84,44 +106,65 @@ nofs.register_widget("button", {
 		end
 
 		-- Now, render !
-		if element.image then
+		if element.def.image then
 			if element.exit == "true" then
 				return string.format("image_button_exit[%s;%s;%s;%s]",
-					fspossize(element, offset), element.image, element.id,
-					element.label or "")
+					fspossize(element, offset), element.def.image, element.id,
+					element.def.label or "")
 			else
 				return string.format("image_button[%s;%s;%s;%s]",
-					fspossize(element, offset), element.image, element.id,
-					element.label or "")
+					fspossize(element, offset), element.def.image, element.id,
+					element.def.label or "")
 			end
 		elseif element.item then
 			return string.format("item_image_button[%s;%s;%s;%s]",
-				fspossize(element, offset), element.item, element.id,
-				element.label or "")
+				fspossize(element, offset), element.def.item, element.id,
+				element.def.label or "")
 		else -- Using image buttons because normal buttons does not size vertically
-			if element.exit == "true" then
+			if element.def.exit == "true" then
 				return string.format("image_button_exit[%s;;%s;%s]",
-					fspossize(element, offset), element.id, element.label or "")
+					fspossize(element, offset), element.id, element.def.label or "")
 			else
 				return string.format("image_button[%s;;%s;%s]",
-					fspossize(element, offset), element.id, element.label or "")
+					fspossize(element, offset), element.id, element.def.label or "")
 			end
 		end
 	end,
 })
 
+
+-- Field
+-- =====
+-- Attributes:
+--  - width, height
+--	- label
+--  - data
+--  - hidden
+-- Triggers:
+--  - on_changed
+
 nofs.register_widget("field", {
 	holds_value = true,
 	offset = { x = 0.3, y = 0.32 },
+	handle_field_event = function(element, field)
+		if element.value ~= field then
+			local value = element.value
+			element.value = field
+			-- TODO:Arguments
+			nofs.calliffunc(element.def.on_changed, value)
+		end
+		element.value = field
+	end
 	render = function(element, offset)
-		local value = element.def.value or ""
+		local value = element.value or ""
+		-- TODO : Should data be managed here or when validating ?
 		if element.def.data then
 			value = element.data[element.def.data]
 		end
 		value = minetest.formspec_escape(value)
 
 		-- Render
-		if element.hidden == 'true' then
+		if element.def.hidden == 'true' then
 			return string.format("pwdfield[%s;%s;%s]", fspossize(element, offset),
 				element.id, value)
 		else
@@ -131,11 +174,30 @@ nofs.register_widget("field", {
 	end,
 })
 
+-- Checkbox
+-- ========
+-- Attributes:
+--  - width, height
+--	- label
+-- Triggers:
+--  - on_clicked
+--  - on_changed
+
 nofs.register_widget("checkbox", {
 	holds_value = true,
+	handle_field_event = function(element, field)
+		if element.value ~= field then
+			local value = element.value
+			element.value = field
+			-- TODO:Arguments
+			nofs.calliffunc(element.def.on_changed, value)
+		end
+		nofs.calliffunc(element.def.on_clicked) -- TODO:ARGUMENTS ?
+
+	end
 	render = function(element, offset)
 		return string.format("checkbox[%s;%s;%s;%s]",
-			fspos(element, offset), element.id, (element.label or ""),
+			fspos(element, offset), element.id, (element.def.label or ""),
 			element.value == "true" and "true" or "fasle")
 	end,
 })
@@ -143,9 +205,9 @@ nofs.register_widget("checkbox", {
 nofs.register_widget("inventory", {
 	render = function(element, offset)
 		return string.format("list[%s;%s;%s;]%s",
-			element.inventory or "current_player",
-			element.list or "main",
+			element.def.inventory or "current_player",
+			element.def.list or "main",
 			fspossize(element, offset),
-			element.listring and "listring[]" or "")
+			element.def.listring and "listring[]" or "")
 		end,
 })

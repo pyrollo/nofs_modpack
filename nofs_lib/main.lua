@@ -34,8 +34,7 @@ function nofs.refresh_form(player)
 				form:render())
 	else
 		-- Hide form
-		-- TODO:New function in API
-		minetest.show_formspec(player, "", "")
+		minetest.close_formspec(player)
 	end
 end
 

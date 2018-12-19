@@ -18,20 +18,8 @@
 	along with signs.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-local widgets = {}
-
-function nofs.register_widget(type_name, def)
-	assert(widgets[type_name] == nil,
-		string.format('Widget type "%s" already registered.', type_name))
-	widgets[type_name] = table.copy(def)
-	widgets[type_name].type = type_name
-end
-
--- Arg can be a type name or an element table
-function nofs.get_widget(arg)
-	if type(arg) == "string" then
-		return widgets[arg]
-	elseif type(arg) == "table" and arg.type then
-		return widgets[arg.type]
+function nofs.calliffunc(fct, ...)
+	if type(fct) == 'function' then
+		return fct(...)
 	end
 end

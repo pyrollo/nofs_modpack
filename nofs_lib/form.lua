@@ -104,6 +104,13 @@ function Form:render(data)
 		end
 	end
 
+-- [[
+En fait, il faudrait copier les champs de def vers element si ceux-ci ne sont
+pas des fonctions car ils sont potentiellement modifiables. Les fonctions ne
+devraient pas être modifiables. On peut peut être les copier puisque ce ne sont
+de toutes façons que des pointeurs.
+]]
+
 	local function create_instance(def, data)
 		local data = data
 		if type(data) ~= 'table' then
