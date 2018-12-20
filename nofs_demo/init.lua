@@ -71,9 +71,15 @@ local main_form = nofs.new_form({
 		data = "meta", -- Si meta contient des enfants, repete, sinon utilise ses champs
 		{ type = 'label', width = 2, height = 1, data="name"},
 		{ type = 'field', width = 2, height = 1, data="value"},
+		{ type = 'button', width = 1, height = 1, label="...",
+			on_clicked = function() print('clicked') end,},
 	},
-	{	type = 'button', height = 1,	width = 1, label = 'Exit', exit = 'true',
-		on_clicked = nofs.close_form,
+	{ type = 'hbox',
+		{ type = 'button', width = 2, height = 1, label="Hello",
+			on_clicked = function() print('Hello !') end,},
+		{	type = 'button', height = 1,	width = 2, label = 'Exit', exit = 'true',
+			on_clicked = nofs.close_form,
+		},
 	},
 })
 
@@ -84,7 +90,6 @@ minetest.register_chatcommand("nofs", { params = "", description = "NOFS demo",
 		print()
 		print(fs)
 		print()
-		minetest.show_formspec(name, 'nofs:text', main_form:render(data))
---	      nofs.show_form(name, main_form)
+		nofs.show_form(name, main_form, data)
 	end,
 })

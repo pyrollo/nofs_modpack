@@ -22,42 +22,38 @@
 -- ===================
 
 -- Refreshes the top form
-function nofs.refresh_form(player)
-	local player = player
-	local form = nofs.get_stack_top(player)
-	if type(player) ~= "string" then
-		player = player:get_player_name()
-	end
+function nofs.refresh_form(player_name)
+	local form = nofs.get_stack_top(player_name)
 
 	if form then
-		minetest.show_formspec(player, form.id,
+		minetest.show_formspec(player_name, form.id,
 				form:render())
 	else
 		-- Hide form
-		minetest.close_formspec(player)
+		minetest.close_formspec(player_name)
 	end
 end
 
 -- Show form
-function nofs.show_form(player, form, params)
+function nofs.show_form(player_name, form, data)
  	-- TODO : test form validity
-	nofs.stack_add(player, form)
+	nofs.stack_add(player_name, form)
 
-	if params then
-		form.context['params'] = params
+	if data then
+		form.context['data'] = data
 	end
 
 --	nofs.trigger_event(player, form, { }, form, 'open')
-	nofs.refresh_form(player)
+	nofs.refresh_form(player_name)
 end
 
 -- Close top form
-function nofs.close_form(player)
-	local form = nofs.get_stack_top(player)
+function nofs.close_form(player_name)
+	local form = nofs.get_stack_top(player_name)
 	if form then
 		-- Like if "esc" key was pressed -- TODO: Check this
 --		nofs.trigger_event(player, form, { quit = "true" }, form, 'close')
 	end
-	nofs.stack_remove(player)
-	nofs.refresh_form(player)
+	nofs.stack_remove(player_name)
+	nofs.refresh_form(player_name)
 end

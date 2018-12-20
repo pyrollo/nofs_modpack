@@ -82,7 +82,7 @@ function Form:new(def)
 	return form
 end
 
-function Form:render(data)
+function Form:render()
 	-- Here, element is a part of instance, not def
 	local function size_element(element)
 		-- first, size children (if any)
@@ -104,7 +104,7 @@ function Form:render(data)
 		end
 	end
 
--- [[
+--[[
 En fait, il faudrait copier les champs de def vers element si ceux-ci ne sont
 pas des fonctions car ils sont potentiellement modifiables. Les fonctions ne
 devraient pas être modifiables. On peut peut être les copier puisque ce ne sont
@@ -145,7 +145,7 @@ de toutes façons que des pointeurs.
 	end
 
 	-- Instance creation
-	self.instance = create_instance(self.def, data)
+	self.instance = create_instance(self.def, self.data)
 	size_element(self.instance)
 
 	return string.format("size[%g,%g]%s", self.instance.size.x, self.instance.size.y,

@@ -89,7 +89,7 @@ nofs.register_widget("button", {
 	needs_id = true,
 	handle_field_event = function(element, field)
 		nofs.calliffunc(element.def.on_clicked) -- TODO:ARGUMENTS ?
-	end
+	end,
 	render = function(element, offset)
 		-- Some warnings
 		if element.def.item ~= nil then
@@ -154,7 +154,7 @@ nofs.register_widget("field", {
 			nofs.calliffunc(element.def.on_changed, value)
 		end
 		element.value = field
-	end
+	end,
 	render = function(element, offset)
 		local value = element.value or ""
 		-- TODO : Should data be managed here or when validating ?
@@ -193,8 +193,7 @@ nofs.register_widget("checkbox", {
 			nofs.calliffunc(element.def.on_changed, value)
 		end
 		nofs.calliffunc(element.def.on_clicked) -- TODO:ARGUMENTS ?
-
-	end
+	end,
 	render = function(element, offset)
 		return string.format("checkbox[%s;%s;%s;%s]",
 			fspos(element, offset), element.id, (element.def.label or ""),

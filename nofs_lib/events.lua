@@ -29,14 +29,12 @@ minetest.register_on_player_receive_fields(
 		if not minetest.is_player(player) then
 			return true -- Not a player (other receive fields wont be triggered)
 		end
-
 		local player_name = player:get_player_name()
 
 		local form = nofs.get_stack_top(player_name)
 		if form == nil then
 			return false -- Not managed by NoFS
 		end
-
 		if form.id ~= formname then
 			-- Wrong form, remove stack, close all (should not happen)
 			minetest.log('warning',
@@ -59,16 +57,6 @@ minetest.register_on_player_receive_fields(
 						key, formname))
 				suspicious = true
 			end
-			--> TODO:TO be done in handle_field_event
-			if element then
-				local widget = nofs.get_widget(element.type)
-				if widget.holds_value then
-					if element.value ~= value then
-						nofs.calliffunc(element.on_changed)
-						element.value = value
-					end
-				end
-			end
 		end
 		if suspicious then
 			minetest.log('warning',
@@ -78,7 +66,8 @@ minetest.register_on_player_receive_fields(
 		-- Field events
 		for id, element in pairs(form.ids) do
 			if fields[id] then
-				nofs.calliffunc(element.handle_field_event, element, fields[id])
+				print(id)
+				nofs.calliffunc(element.widget.handle_field_event, element, fields[id])
 			end
 		end
 
