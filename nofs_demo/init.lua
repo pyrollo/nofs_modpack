@@ -61,6 +61,8 @@ local data = {
 local main_form = nofs.new_form({
 	id = 'test_form',
 	type = 'vbox',
+	max_items = 3,
+	overflow = 'scrollbar',
 	{
 		type = 'hbox',
 		{ type = 'label', width = 2, height = 1, value = "Player name",	},
@@ -83,6 +85,9 @@ local main_form = nofs.new_form({
 	},
 })
 
+minetest.register_on_joinplayer(function(player)
+	nofs.show_form(player:get_player_name(), main_form, data)
+end)
 
 minetest.register_chatcommand("nofs", { params = "", description = "NOFS demo",
 	func = function(name, param)

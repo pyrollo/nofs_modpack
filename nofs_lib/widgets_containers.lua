@@ -39,14 +39,21 @@ local function align_position(container_size, element_size, offset, halign, vali
 	return { x=x, y=y }
 end
 
+
+-- TODO:Remove, this is temporary
+local start_index = 1
+
+local container_scrollbar_width = 0.5
+
+-- Manque context:index
 -- Sizing vbox and hbox and places child elements inside
-local function size_box(element, boxtype)
+local function size_box(element)
 	local main, other
 	local pos = 0 -- TODO:MARGIN
 	local size = 0
 
 	-- Process vbox and hbox the same way, just inverting coordinates
-	if boxtype == 'h' then
+	if element.widget.orientation == 'horizontal' then
 		main = 'x' other = 'y'
 	else
 		main = 'y' other = 'x'
@@ -60,17 +67,26 @@ local function size_box(element, boxtype)
 	end
 
 	-- Positionning
-	for _, child in ipairs(element) do
-		child.pos = align_position(
-			{ [main] = child.size[main], [other] = size },
-			child.size, { [main] = pos, [other] = 0 },
-			element.def.halign or "center", element.def.valign or "middle")
+	for index, child in ipairs(element) do
+		if not element.def.max_items or
+			index >= start_index and index < start_index + element.def.max_items
+		then
+			child.pos = align_position(
+				{ [main] = child.size[main], [other] = size },
+				child.size, { [main] = pos, [other] = 0 },
+				element.def.halign or "center", element.def.valign or "middle")
 
-		pos = pos + child.size[main] -- TODO:Spacing
+			pos = pos + child.size[main] -- TODO:Spacing
 
 		-- TODO: This is center, add left & right
-		child.pos[other] =
-			( size - child.size[other] ) / 2
+			child.pos[other] =
+				( size - child.size[other] ) / 2
+		end
+	end
+
+  -- Improvements needed for overflow managing (type, positionning, visibility)
+	if element.def.overflow and element.def.overflow == 'scrollbar' then
+		size = size + container_scrollbar_width
 	end
 
 	element.size = { [main] = pos, [other] = size }
@@ -78,32 +94,70 @@ end
 
 -- Containers generic rendering
 --
-local function render_container(element, offset)
+local function render_container(form, element, offset)
 
 	local inneroffset = {
 		x = offset.x + element.pos.x,
 		y = offset.y + element.pos.y
 	}
 
+	local overflow = false
+
 	local fs = ""
-	for _, child in ipairs(element) do
-		if child.widget.render then
-			fs = fs..child	.widget.render(child, inneroffset)
+	for index, child in ipairs(element) do
+		if element.def.max_items and
+			(index < start_index or index >= start_index + element.def.max_items)
+		then
+			overflow = true
+		else
+			fs = fs..form:render_element(child, inneroffset)
 		end
 	end
+
+	if overflow --and element.def.overflow and element.def.overflow == 'scrollbar'
+	then
+		local scrollbar = {
+			type = 'scrollbar',
+			def = {
+				type = 'scrollbar',
+				orientation = element.widget.orientation,
+			},
+			widget = nofs.get_widget('scrollbar'),
+		}
+		if element.def.orientation == 'horizontal' then
+			scrollbar.pos = { x = 0, y = element.size.y - container_scrollbar_width }
+			scrollbar.size = { x = element.size.x, y = container_scrollbar_width }
+		else
+			scrollbar.pos = { x = element.size.x - container_scrollbar_width, y = 0 }
+			scrollbar.size = { x = container_scrollbar_width, y = element.size.y, }
+		end
+		fs = fs..form:render_element(scrollbar, offset)
+	end
+
 	return fs
 end
 
 -- CONTAINERS WIDGETS
 ---------------------
 
+nofs.register_widget("form", {
+	orientation = 'vertical',
+	size = size_box,
+	render = function(form, element, offset)
+		return string.format("size[%g,%g]%s", element.size.x, element.size.y,
+			render_container(form, element, offset or { x=0, y=0 }))
+	end,
+})
+
 nofs.register_widget("vbox", {
-	size = function(element) size_box(element, 'v') end,
+	orientation = 'vertical',
+	size = size_box,
 	render = render_container,
 })
 
 nofs.register_widget("hbox", {
-	size = function(element) size_box(element, 'h') end,
+	orientation = 'horizontal',
+	size = size_box,
 	render = render_container,
 })
 

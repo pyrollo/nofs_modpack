@@ -19,50 +19,114 @@
 --]]
 
 --------------------------------------------------------------------------------
---- Form class
+-- Functions
+
+-- Check that element.ids are unique and that elements have proper types
+-- As instance and def tables have id and type fields, it works on both
+local function check_element(element, ids)
+	local ids = ids or {}
+
+	assert(element.type, 'Element must have a type.')
+	local widget = nofs.get_widget(element.type)
+	assert(widget, 'Element type "'..element.type..'" unknown.')
+
+	if element.id then
+		assert(ids[element.id] == nil,
+			'Id "'..element.id..'" already used in the same form.')
+		ids[element.id] = element
+	end
+
+	for _, child in ipairs(element) do
+		check_element(child, ids)
+	end
+end
+
+--------------------------------------------------------------------------------
+-- Form class
+
+-- TODO: Checks :
+-- element.def.max_items integer > 1
+-- element.def.id should not start with '.' (reserved)
 
 local Form = {}
 --nofs.Form = Form
 
-function Form:new(def)
-	-- Here, element is a part of def, not instance
-	local function collect_ids(element, ids)
-		if element.id then
-			assert(ids[element.id] == nil,
-				'Id "'..element.id..'" already used in the same form.')
-			ids[element.id] = element
-		end
-
-		for _, child in ipairs(element) do
-			collect_ids(child, ids)
-		end
+function Form:get_unused_id(prefix)
+	local i = 1
+	while self.ids[(prefix or "other")..i] do
+		i = i + 1
 	end
+	return (prefix or "other")..i
+end
 
-	-- Here, element is a part of def, not instance
-	local function add_missing_ids_and_check_types(element, ids)
-		assert(element.type, 'Element must have a type.')
-		local widget = nofs.get_widget(element.type)
-		assert(widget, 'Element type "'..element.type..'" unknown.')
+function Form:register_id(element)
+	if element.id then
+		assert(self.ids[element.id] == nil,
+			'Id "'..element.id..'" already used in the same form.')
+		self.ids[element.id] = element
+	end
+end
 
-		if not element.id and (widget.needs_id or widget.holds_value) then
-			local i = 1
-			while ids[element.type..i] do
-				i = i + 1
+function Form:register_or_create_id(element)
+	if not element.id then
+		element.id = self:get_unused_id(element.type)
+	end
+	self:register_id(element)
+end
+
+function Form:create_id_if_missing(element)
+	if not element.id then
+		element.id = self:get_unused_id(element.type)
+		self:register_id(element)
+	end
+end
+
+function Form:build_instance()
+	local function build_instance(def, data)
+		local data = data
+		if type(data) ~= 'table' then
+			minetest.log("warning", "[nofs] data passed to create_instance is not a table")
+			data = {}
+		end
+		local instance = { def = def, type = def.type, data = data,
+			widget = nofs.get_widget(def.type),
+pos ={ x=0, y=0 } -- A virer?
+		 }
+		for _, childdef in ipairs(def) do
+			if childdef.data then
+				if data[childdef.data] and type(data[childdef.data]) == "table" then
+					-- Data has children, multiple instances
+					if #data[childdef.data] then
+						for _, childdata in ipairs(data[childdef.data]) do
+							instance[#instance+1] = build_instance(childdef, childdata)
+						end
+					else
+						-- cas d'un enfant avec un data={} ne contenant que des champs
+						-- A vérifier l'utilité
+						instance[#instance+1] = build_instance(childdef, data[childdef.data])
+					end
+				else
+					-- Cas habituel d'un enfant adressant directement un champ des data
+					instance[#instance+1] = build_instance(childdef, data)
+				end
+			else
+				-- Cas d'un enfant sans data
+				instance[#instance+1] = build_instance(childdef, data)
 			end
-			element.id = element.type..i
-			ids[element.id] = element
 		end
-
-		for index, child in ipairs(element) do
-			add_missing_ids_and_check_types(child, ids)
-		end
+		return instance
 	end
 
-	if type(def) ~= "table" then
-		minetest.log("error",
-			"[nofs] Form definition must be a table.")
-		return nil
-	end
+	-- Instance creation
+	self.instance = build_instance(self.def, self.data)
+--	self.instance.pos = { x=0, y=0 }
+end
+
+function Form:new(def)
+	assert(type(def) == "table", "Form definition must be a table.")
+
+	def.type = "form"
+	check_element(def)
 
 	local form = {
 		def = table.copy(def),
@@ -71,19 +135,21 @@ function Form:new(def)
 		data = {},
 	}
 
-	form.def.type = form.def.type or "vbox"
-	form.instance.pos = { x=0, y=0 }
-
-	collect_ids(form.def, form.ids)
-	add_missing_ids_and_check_types(form.def, form.ids)
-
 	setmetatable(form, self)
 	self.__index = self
 	return form
 end
 
+function Form:render_element(element, offset)
+	self:register_id(element)
+	if element.widget.render then
+		return element.widget.render(self, element, offset)
+	else
+		return ''
+	end
+end
+
 function Form:render()
-	-- Here, element is a part of instance, not def
 	local function size_element(element)
 		-- first, size children (if any)
 		for _, child in ipairs(element) do
@@ -104,52 +170,19 @@ function Form:render()
 		end
 	end
 
+	self:build_instance()
+
 --[[
 En fait, il faudrait copier les champs de def vers element si ceux-ci ne sont
 pas des fonctions car ils sont potentiellement modifiables. Les fonctions ne
 devraient pas être modifiables. On peut peut être les copier puisque ce ne sont
 de toutes façons que des pointeurs.
 ]]
-
-	local function create_instance(def, data)
-		local data = data
-		if type(data) ~= 'table' then
-			minetest.log("warning", "[nofs] data passed to create_instance is not a table")
-			data = {}
-		end
-		local instance = { def = def, widget = nofs.get_widget(def.type),
-			data = data, pos = { x=0, y=0 } }
-		for _, childdef in ipairs(def) do
-			if childdef.data then
-				if data[childdef.data] and type(data[childdef.data]) == "table" then
-					-- Data has children, multiple instances
-					if #data[childdef.data] then
-						for _, childdata in ipairs(data[childdef.data]) do
-							instance[#instance+1] = create_instance(childdef, childdata)
-						end
-					else
-						-- cas d'un enfant avec un data={} ne contenant que des champs
-						-- A vérifier l'utilité
-						instance[#instance+1] = create_instance(childdef, data[childdef.data])
-					end
-				else
-					-- Cas habituel d'un enfant adressant directement un champ des data
-					instance[#instance+1] = create_instance(childdef, data)
-				end
-			else
-				-- Cas d'un enfant sans data=
-				instance[#instance+1] = create_instance(childdef, data)
-			end
-		end
-		return instance
-	end
-
-	-- Instance creation
-	self.instance = create_instance(self.def, self.data)
 	size_element(self.instance)
 
-	return string.format("size[%g,%g]%s", self.instance.size.x, self.instance.size.y,
-		self.instance.widget.render(self.instance, {x = 0, y = 0}))
+	return self:render_element(self.instance, { x = 0, y = 0 })
+--	return string.format("size[%g,%g]%s", self.instance.size.x, self.instance.size.y,
+--		self:render_element(self.instance, {x = 0, y = 0}))
 end
 
 function nofs.is_form(form)

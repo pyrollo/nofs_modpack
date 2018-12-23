@@ -40,7 +40,7 @@ function nofs.show_form(player_name, form, data)
 	nofs.stack_add(player_name, form)
 
 	if data then
-		form.context['data'] = data
+		form.data = data
 	end
 
 --	nofs.trigger_event(player, form, { }, form, 'open')

@@ -18,7 +18,7 @@
 	along with signs.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-local fields_whitelist = { "quit", "key_enter", "key_enter_field" }
+local fields_whitelist = { quit = true, key_enter = true, key_enter_field = true}
 
 -- Event management
 -- ================
@@ -76,7 +76,7 @@ minetest.register_on_player_receive_fields(
 		-- If form exit, unstack
 		if fields.quit == "true" then
 			-- Trigger on_close event
-			nofs.trigger_event(player, form, fields, form, 'close')
+--			nofs.trigger_event(player, form, fields, form, 'close')
 			nofs.stack_remove(player_name)
 			local form = nofs.get_stack_top(player_name)
 			if form then

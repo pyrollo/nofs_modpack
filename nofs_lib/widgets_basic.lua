@@ -48,8 +48,24 @@ end
 -- BASIC WIDGETS
 ----------------
 
--- button
--- ======
+-- scrollbar
+-- =========
+
+nofs.register_widget("scrollbar", {
+	handle_field_event = function(element, field)
+		print(dump(minetest.explode_scrollbar_event(field)))
+--		nofs.calliffunc(element.def.on_clicked) -- TODO:ARGUMENTS ?
+	end,
+	render = function(form, element, offset)
+		form:create_id_if_missing(element)
+		return string.format("scrollbar[%s;%s;%s;%s]",
+			fspossize(element, offset), element.def.orientation or "vertical",
+			element.id, 0) -- TODO: VALUE ??
+	end,
+})
+
+-- label
+-- =====
 -- Attributes:
 --  - width, height
 --	- label
@@ -58,7 +74,7 @@ end
 
 nofs.register_widget("label", {
 	offset = { x = 0, y = 0.2 },
-	render = function(element, offset)
+	render = function(form, element, offset)
 		local label = element.def.label or ""
 		if element.def.data then
 			-- TODO: check string/number but not table/function ?
@@ -86,11 +102,10 @@ nofs.register_widget("label", {
 --  - on_clicked
 
 nofs.register_widget("button", {
-	needs_id = true,
 	handle_field_event = function(element, field)
 		nofs.calliffunc(element.def.on_clicked) -- TODO:ARGUMENTS ?
 	end,
-	render = function(element, offset)
+	render = function(form, element, offset)
 		-- Some warnings
 		if element.def.item ~= nil then
 			if element.def.image ~= nil then
@@ -104,6 +119,8 @@ nofs.register_widget("button", {
 					'Ignoring exit=true attribute.')
 			end
 		end
+
+		form:create_id_if_missing(element)
 
 		-- Now, render !
 		if element.def.image then
@@ -155,7 +172,8 @@ nofs.register_widget("field", {
 		end
 		element.value = field
 	end,
-	render = function(element, offset)
+	render = function(form, element, offset)
+		form:create_id_if_missing(element)
 		local value = element.value or ""
 		-- TODO : Should data be managed here or when validating ?
 		if element.def.data then
@@ -194,7 +212,8 @@ nofs.register_widget("checkbox", {
 		end
 		nofs.calliffunc(element.def.on_clicked) -- TODO:ARGUMENTS ?
 	end,
-	render = function(element, offset)
+	render = function(form, element, offset)
+		form:create_id_if_missing(element)
 		return string.format("checkbox[%s;%s;%s;%s]",
 			fspos(element, offset), element.id, (element.def.label or ""),
 			element.value == "true" and "true" or "fasle")
@@ -202,7 +221,8 @@ nofs.register_widget("checkbox", {
 })
 
 nofs.register_widget("inventory", {
-	render = function(element, offset)
+	render = function(form, element, offset)
+		form:create_id_if_missing(element)
 		return string.format("list[%s;%s;%s;]%s",
 			element.def.inventory or "current_player",
 			element.def.list or "main",
