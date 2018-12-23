@@ -66,7 +66,7 @@ minetest.register_on_player_receive_fields(
 		-- Field events
 		for id, item in pairs(form.ids) do
 			if fields[id] then
-				item:handle_field_event(fields[id])
+				item:handle_field_event(player_name, fields[id])
 			end
 		end
 
@@ -79,7 +79,9 @@ minetest.register_on_player_receive_fields(
 			nofs.stack_remove(player_name)
 		end
 
-		nofs.refresh_form(player_name)
-		--> End with a refresh / close to take in account modifications
+		if form.updated then
+			form.updated = nil
+			nofs.refresh_form(player_name)
+		end
 	end
 )

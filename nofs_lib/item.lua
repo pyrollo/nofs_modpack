@@ -69,11 +69,11 @@ function Item:render(offset)
 	end
 end
 
-function Item:handle_field_event(field)
+function Item:handle_field_event(player_name, field)
 	if self.widget.handle_field_event and
 		type(self.widget.handle_field_event) == 'function'
 	then
-		return self.widget.handle_field_event(self, field)
+		return self.widget.handle_field_event(self, player_name, field)
 	end
 end
 

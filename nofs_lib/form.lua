@@ -92,7 +92,6 @@ function Form:get_context(item)
 		self:register_id(item)
 	end
 	if not self.contexts[item.id] then
-		print("Create context for "..item.id)
 		self.contexts[item.id] = {}
 	end
 	return self.contexts[item.id]
@@ -152,6 +151,9 @@ function Form:render()
 	return self.item:render({ x = 0, y = 0 })
 end
 
+function Form:update()
+	self.updated = true
+end
 
 function nofs.is_form(form)
 	local meta = getmetatable(form)

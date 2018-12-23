@@ -59,15 +59,13 @@ end
 -- =========
 
 nofs.register_widget("scrollbar", {
-	handle_field_event = function(item, field)
---		nofs.calliffunc(item.def.on_clicked) -- TODO:ARGUMENTS ?
+	handle_field_event = function(item, player_name, field)
 		local event = minetest.explode_scrollbar_event(field)
 		local context = item:get_context()
 		if event.type == 'CHG' then
 			event.increase = event.value > (context.value or 0)
 			event.decrease = event.value < (context.value or 0)
 			context.value = event.value
-
 			if item.def.connected_to then
 				local connected =
 					item.form:get_element_by_id(item.def.connected_to)
@@ -76,6 +74,8 @@ nofs.register_widget("scrollbar", {
 					local start_index = 1
 					if max_index > 1 then
 						start_index = scrollbar_get_index(event.value, 1, max_index)
+						-- If index unchanged, force to go to next index
+						-- according to direction
 						if start_index == connected:get_context().start_index
 						then
 							if event.increase and start_index < max_index then
@@ -88,21 +88,20 @@ nofs.register_widget("scrollbar", {
 					end
 					connected:get_context().start_index = start_index
 					context.value = scrollbar_get_value(start_index, 1, max_index)
+					context.update = (context.update or 0) + 1
+					minetest.after(0.1, function()
+						context.update = context.update - 1
+						if context.update == 0 then
+							nofs.refresh_form(player_name)
+						end
+					end)
 				end
 			end
 		end
---[[
-		if type == 'CHG' then
-			if element.connected_to then
-				local connect = form:get_element_by_id(element.connected_to)
-				connect.def.max_items
-				connect.data.start_index
-				#connect
-
-		end]]
 	end,
 	render = function(item, offset)
 		item:have_an_id()
+
 		return string.format("scrollbar[%s;%s;%s;%s]",
 			fspossize(item, offset), item.def.orientation or "vertical",
 			item.id, item:get_context().value or 0) -- TODO: VALUE ??
@@ -147,7 +146,7 @@ nofs.register_widget("label", {
 --  - on_clicked
 
 nofs.register_widget("button", {
-	handle_field_event = function(item, field)
+	handle_field_event = function(item, player_name, field)
 		nofs.calliffunc(item.def.on_clicked) -- TODO:ARGUMENTS ?
 	end,
 	render = function(item, offset)
@@ -208,7 +207,7 @@ nofs.register_widget("button", {
 nofs.register_widget("field", {
 	holds_value = true,
 	offset = { x = 0.3, y = 0.32 },
-	handle_field_event = function(item, field)
+	handle_field_event = function(item, player_name, field)
 		if item.value ~= field then
 			local value = item.value
 			item.value = field
@@ -248,7 +247,7 @@ nofs.register_widget("field", {
 
 nofs.register_widget("checkbox", {
 	holds_value = true,
-	handle_field_event = function(item, field)
+	handle_field_event = function(item, player_name, field)
 		if item.value ~= field then
 			local value = item.value
 			item.value = field

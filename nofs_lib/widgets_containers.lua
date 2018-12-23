@@ -133,7 +133,7 @@ local function render_container(item, offset)
 			scrollbar.pos = { x = item.size.x - container_scrollbar_width, y = 0 }
 			scrollbar.size = { x = container_scrollbar_width, y = item.size.y, }
 		end
-		fs = fs..scrollbar:render(offset)
+		fs = fs..scrollbar:render(inneroffset)
 	end
 
 	return fs
