@@ -30,7 +30,7 @@ function nofs.refresh_form(player_name)
 				form:render())
 	else
 		-- Hide form
-		minetest.close_formspec(player_name)
+		minetest.close_formspec(player_name, '')
 	end
 end
 
@@ -41,6 +41,8 @@ function nofs.show_form(player_name, form, data)
 
 	if data then
 		form.data = data
+	else
+		form.data = ''
 	end
 
 --	nofs.trigger_event(player, form, { }, form, 'open')

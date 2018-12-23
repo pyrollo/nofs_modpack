@@ -50,8 +50,8 @@ minetest.register_on_player_receive_fields(
 		-- Check fields
 		local suspicious = false
 		for key, value in pairs(fields) do
-			local element = form.ids[key]
-			if not fields_whitelist[key] and not element then
+			local item = form.ids[key]
+			if not fields_whitelist[key] and not item then
 				minetest.log('warning',
 					string.format('[nofs] Unwanted field "%s" for form "%s".',
 						key, formname))
@@ -64,10 +64,9 @@ minetest.register_on_player_receive_fields(
 		end
 
 		-- Field events
-		for id, element in pairs(form.ids) do
+		for id, item in pairs(form.ids) do
 			if fields[id] then
-				print(id)
-				nofs.calliffunc(element.widget.handle_field_event, element, fields[id])
+				item:handle_field_event(fields[id])
 			end
 		end
 
@@ -78,12 +77,9 @@ minetest.register_on_player_receive_fields(
 			-- Trigger on_close event
 --			nofs.trigger_event(player, form, fields, form, 'close')
 			nofs.stack_remove(player_name)
-			local form = nofs.get_stack_top(player_name)
-			if form then
-				nofs.refresh_form(form, player)
-			end
 		end
 
+		nofs.refresh_form(player_name)
 		--> End with a refresh / close to take in account modifications
 	end
 )

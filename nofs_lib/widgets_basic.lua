@@ -19,29 +19,29 @@
 --]]
 
 -- Standard offset position and size
-local function fspos(element, offset)
-	local widgetoffset = element.widget.offset
+local function fspos(item, offset)
+	local widgetoffset = item.widget.offset
 	if widgetoffset then
 		return string.format("%g,%g",
-			element.pos.x + offset.x + widgetoffset.x,
-			element.pos.y + offset.y + widgetoffset.y)
+			item.pos.x + offset.x + widgetoffset.x,
+			item.pos.y + offset.y + widgetoffset.y)
 	else
 		return string.format("%g,%g",
-			element.pos.x + offset.x, element.pos.y + offset.y)
+			item.pos.x + offset.x, item.pos.y + offset.y)
 	end
 end
 
-local function fspossize(element, offset)
-	local widgetoffset = element.widget.offset
+local function fspossize(item, offset)
+	local widgetoffset = item.widget.offset
 	if widgetoffset then
 		return string.format("%g,%g;%g,%g",
-			element.pos.x + offset.x + widgetoffset.x,
-			element.pos.y + offset.y + widgetoffset.y,
-			element.size.x, element.size.y)
+			item.pos.x + offset.x + widgetoffset.x,
+			item.pos.y + offset.y + widgetoffset.y,
+			item.size.x, item.size.y)
 	else
 		return string.format("%g,%g;%g,%g",
-			element.pos.x + offset.x, element.pos.y + offset.y,
-			element.size.x, element.size.y)
+			item.pos.x + offset.x, item.pos.y + offset.y,
+			item.size.x, item.size.y)
 	end
 end
 
@@ -52,15 +52,28 @@ end
 -- =========
 
 nofs.register_widget("scrollbar", {
-	handle_field_event = function(element, field)
-		print(dump(minetest.explode_scrollbar_event(field)))
---		nofs.calliffunc(element.def.on_clicked) -- TODO:ARGUMENTS ?
+	handle_field_event = function(item, field)
+--		nofs.calliffunc(item.def.on_clicked) -- TODO:ARGUMENTS ?
+		local event = minetest.explode_scrollbar_event(field)
+		print(dump(event))
+		if type == 'CHG' then
+			item.data.value = event.value
+		end
+--[[
+		if type == 'CHG' then
+			if element.connected_to then
+				local connect = form:get_element_by_id(element.connected_to)
+				connect.def.max_items
+				connect.data.start_index
+				#connect
+
+		end]]
 	end,
-	render = function(form, element, offset)
-		form:create_id_if_missing(element)
+	render = function(item, offset)
+		item:have_an_id()
 		return string.format("scrollbar[%s;%s;%s;%s]",
-			fspossize(element, offset), element.def.orientation or "vertical",
-			element.id, 0) -- TODO: VALUE ??
+			fspossize(item, offset), item.def.orientation or "vertical",
+			item.id, item.data.value or 0) -- TODO: VALUE ??
 	end,
 })
 
@@ -74,18 +87,18 @@ nofs.register_widget("scrollbar", {
 
 nofs.register_widget("label", {
 	offset = { x = 0, y = 0.2 },
-	render = function(form, element, offset)
-		local label = element.def.label or ""
-		if element.def.data then
+	render = function(item, offset)
+		local label = item.def.label or ""
+		if item.def.data then
 			-- TODO: check string/number but not table/function ?
-			label = element.data[element.def.data]
+			label = item.data[item.def.data]
 		end
 		label = minetest.formspec_escape(label)
 
-		if element.direction and element.direction == 'vertical' then
-			return string.format("vertlabel[%s;%s]", fspos(element, offset), label)
+		if item.direction and item.direction == 'vertical' then
+			return string.format("vertlabel[%s;%s]", fspos(item, offset), label)
 		else
-			return string.format("label[%s;%s]", fspos(element, offset), label)
+			return string.format("label[%s;%s]", fspos(item, offset), label)
 		end
 	end,
 })
@@ -102,48 +115,48 @@ nofs.register_widget("label", {
 --  - on_clicked
 
 nofs.register_widget("button", {
-	handle_field_event = function(element, field)
-		nofs.calliffunc(element.def.on_clicked) -- TODO:ARGUMENTS ?
+	handle_field_event = function(item, field)
+		nofs.calliffunc(item.def.on_clicked) -- TODO:ARGUMENTS ?
 	end,
-	render = function(form, element, offset)
+	render = function(item, offset)
 		-- Some warnings
-		if element.def.item ~= nil then
-			if element.def.image ~= nil then
+		if item.def.item ~= nil then
+			if item.def.image ~= nil then
 				minetest.log('warning',
 					'Button can\'t have "image" and "item" attributes at once. '..
 					'Ignoring "item" attribute.')
 			end
-			if element.exit == 'true' then
+			if item.exit == 'true' then
 				minetest.log('warning',
 					'Button can\'t have exit=true and item attributes at once. '..
 					'Ignoring exit=true attribute.')
 			end
 		end
 
-		form:create_id_if_missing(element)
+		item:have_an_id()
 
 		-- Now, render !
-		if element.def.image then
-			if element.exit == "true" then
+		if item.def.image then
+			if item.exit == "true" then
 				return string.format("image_button_exit[%s;%s;%s;%s]",
-					fspossize(element, offset), element.def.image, element.id,
-					element.def.label or "")
+					fspossize(item, offset), item.def.image, item.id,
+					item.def.label or "")
 			else
 				return string.format("image_button[%s;%s;%s;%s]",
-					fspossize(element, offset), element.def.image, element.id,
-					element.def.label or "")
+					fspossize(item, offset), item.def.image, item.id,
+					item.def.label or "")
 			end
-		elseif element.item then
+		elseif item.item then
 			return string.format("item_image_button[%s;%s;%s;%s]",
-				fspossize(element, offset), element.def.item, element.id,
-				element.def.label or "")
+				fspossize(item, offset), item.def.item, item.id,
+				item.def.label or "")
 		else -- Using image buttons because normal buttons does not size vertically
-			if element.def.exit == "true" then
+			if item.def.exit == "true" then
 				return string.format("image_button_exit[%s;;%s;%s]",
-					fspossize(element, offset), element.id, element.def.label or "")
+					fspossize(item, offset), item.id, item.def.label or "")
 			else
 				return string.format("image_button[%s;;%s;%s]",
-					fspossize(element, offset), element.id, element.def.label or "")
+					fspossize(item, offset), item.id, item.def.label or "")
 			end
 		end
 	end,
@@ -163,31 +176,31 @@ nofs.register_widget("button", {
 nofs.register_widget("field", {
 	holds_value = true,
 	offset = { x = 0.3, y = 0.32 },
-	handle_field_event = function(element, field)
-		if element.value ~= field then
-			local value = element.value
-			element.value = field
+	handle_field_event = function(item, field)
+		if item.value ~= field then
+			local value = item.value
+			item.value = field
 			-- TODO:Arguments
-			nofs.calliffunc(element.def.on_changed, value)
+			nofs.calliffunc(item.def.on_changed, value)
 		end
-		element.value = field
+		item.value = field
 	end,
-	render = function(form, element, offset)
-		form:create_id_if_missing(element)
-		local value = element.value or ""
+	render = function(item, offset)
+		item:have_an_id()
+		local value = item.value or ""
 		-- TODO : Should data be managed here or when validating ?
-		if element.def.data then
-			value = element.data[element.def.data]
+		if item.def.data then
+			value = item.data[item.def.data]
 		end
 		value = minetest.formspec_escape(value)
 
 		-- Render
-		if element.def.hidden == 'true' then
-			return string.format("pwdfield[%s;%s;%s]", fspossize(element, offset),
-				element.id, value)
+		if item.def.hidden == 'true' then
+			return string.format("pwdfield[%s;%s;%s]", fspossize(item, offset),
+				item.id, value)
 		else
-			return string.format("field[%s;%s;%s;%s]", fspossize(element, offset),
-				element.id, (element.def.label or ""), value)
+			return string.format("field[%s;%s;%s;%s]", fspossize(item, offset),
+				item.id, (item.def.label or ""), value)
 		end
 	end,
 })
@@ -203,30 +216,30 @@ nofs.register_widget("field", {
 
 nofs.register_widget("checkbox", {
 	holds_value = true,
-	handle_field_event = function(element, field)
-		if element.value ~= field then
-			local value = element.value
-			element.value = field
+	handle_field_event = function(item, field)
+		if item.value ~= field then
+			local value = item.value
+			item.value = field
 			-- TODO:Arguments
-			nofs.calliffunc(element.def.on_changed, value)
+			nofs.calliffunc(item.def.on_changed, value)
 		end
-		nofs.calliffunc(element.def.on_clicked) -- TODO:ARGUMENTS ?
+		nofs.calliffunc(item.def.on_clicked) -- TODO:ARGUMENTS ?
 	end,
-	render = function(form, element, offset)
-		form:create_id_if_missing(element)
+	render = function(item, offset)
+		item:have_an_id()
 		return string.format("checkbox[%s;%s;%s;%s]",
-			fspos(element, offset), element.id, (element.def.label or ""),
-			element.value == "true" and "true" or "fasle")
+			fspos(item, offset), item.id, (item.def.label or ""),
+			item.value == "true" and "true" or "fasle")
 	end,
 })
 
 nofs.register_widget("inventory", {
-	render = function(form, element, offset)
-		form:create_id_if_missing(element)
+	render = function(item, offset)
+		item:have_an_id()
 		return string.format("list[%s;%s;%s;]%s",
-			element.def.inventory or "current_player",
-			element.def.list or "main",
-			fspossize(element, offset),
-			element.def.listring and "listring[]" or "")
+			item.def.inventory or "current_player",
+			item.def.list or "main",
+			fspossize(item, offset),
+			item.def.listring and "listring[]" or "")
 		end,
 })
