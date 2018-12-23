@@ -63,7 +63,7 @@ local function size_box(item)
 		end
 	end
 
-	local start_index = item.data.start_index or 1
+	local start_index = item:get_context().start_index or 1
 
 	-- Positionning
 	for index, child in ipairs(item) do
@@ -100,8 +100,7 @@ local function render_container(item, offset)
 		y = offset.y + item.pos.y
 	}
 
- -- TODO : Manage to have a unique name
-	local start_index = item.data.start_index or 1
+	local start_index = item:get_context().start_index or 1
 
 	local overflow = false
 

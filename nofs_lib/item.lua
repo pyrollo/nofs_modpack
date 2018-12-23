@@ -79,17 +79,14 @@ end
 
 function Item:have_an_id()
 	if not self.id then
-		self.id = self.form:get_unused_id(self.type)
+		self.id = self.form:get_unused_id(self.def.type)
 		self.form:register_id(self)
 	end
 end
 
 function Item:get_context()
+	return self.form:get_context(self)
 end
-
-function Item:get_widget()
-end
-
 
 function nofs.is_item(item)
 	local meta = getmetatable(item)

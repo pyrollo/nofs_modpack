@@ -58,6 +58,7 @@ function Form:new(def)
 		def = table.copy(def),
 		instance = {},
 		ids = {},
+		contexts = {},
 		data = {},
 	}
 
@@ -81,6 +82,24 @@ function Form:register_id(item)
 		self.ids[item.id] = item
 		item.registered_id = true
 	end
+end
+
+function Form:get_context(item)
+	if not item.id then
+		item:have_an_id()
+	end
+	if not item.regitered_id then
+		self:register_id(item)
+	end
+	if not self.contexts[item.id] then
+		print("Create context for "..item.id)
+		self.contexts[item.id] = {}
+	end
+	return self.contexts[item.id]
+end
+
+function Form:get_element_by_id(id)
+	return self.ids[id]
 end
 
 function Form:build_items()
@@ -132,6 +151,7 @@ function Form:render()
 
 	return self.item:render({ x = 0, y = 0 })
 end
+
 
 function nofs.is_form(form)
 	local meta = getmetatable(form)

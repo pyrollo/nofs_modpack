@@ -48,6 +48,13 @@ end
 -- BASIC WIDGETS
 ----------------
 
+local function scrollbar_get_index(value, min, max)
+	return math.floor(value / 1000 * (max-min)) + min
+end
+local function scrollbar_get_value(index, min, max)
+	return math.floor(1000 * (index-min) / ((max-min) or 1 ))
+end
+
 -- scrollbar
 -- =========
 
@@ -55,9 +62,34 @@ nofs.register_widget("scrollbar", {
 	handle_field_event = function(item, field)
 --		nofs.calliffunc(item.def.on_clicked) -- TODO:ARGUMENTS ?
 		local event = minetest.explode_scrollbar_event(field)
-		print(dump(event))
-		if type == 'CHG' then
-			item.data.value = event.value
+		local context = item:get_context()
+		if event.type == 'CHG' then
+			event.increase = event.value > (context.value or 0)
+			event.decrease = event.value < (context.value or 0)
+			context.value = event.value
+
+			if item.def.connected_to then
+				local connected =
+					item.form:get_element_by_id(item.def.connected_to)
+				if connected.def.max_items then
+					local max_index = #connected - connected.def.max_items
+					local start_index = 1
+					if max_index > 1 then
+						start_index = scrollbar_get_index(event.value, 1, max_index)
+						if start_index == connected:get_context().start_index
+						then
+							if event.increase and start_index < max_index then
+								start_index = start_index + 1
+							end
+							if event.decrease and start_index > 1 then
+								start_index = start_index - 1
+							end
+						end
+					end
+					connected:get_context().start_index = start_index
+					context.value = scrollbar_get_value(start_index, 1, max_index)
+				end
+			end
 		end
 --[[
 		if type == 'CHG' then
@@ -73,7 +105,7 @@ nofs.register_widget("scrollbar", {
 		item:have_an_id()
 		return string.format("scrollbar[%s;%s;%s;%s]",
 			fspossize(item, offset), item.def.orientation or "vertical",
-			item.id, item.data.value or 0) -- TODO: VALUE ??
+			item.id, item:get_context().value or 0) -- TODO: VALUE ??
 	end,
 })
 
