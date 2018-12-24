@@ -93,6 +93,16 @@ function Form:get_element_by_id(id)
 	return self.ids[id]
 end
 
+function Form:trigger_items(name, ...)
+	for _, item in pairs(self.ids) do
+		item:trigger(name, ...)
+	end
+end
+
+function Form:save()
+	self:trigger_items('save')
+end
+
 function Form:set_node(pos)
 	self.context.node_meta = minetest.get_meta(pos)
 	self.context.node_pos = table.copy(pos)
@@ -123,7 +133,7 @@ end
 function Form:set_meta(meta, value)
 	local pos = meta:find(':')
 	assert(pos, "Reference to meta should be a string like node:xxx or player:yyy.")
-	local mtype, mname = meta:sub(1,pos-1), meta:sub(pos+1)
+	local ctx, key = meta:sub(1,pos-1), meta:sub(pos+1)
 	if ctx == 'player' then
 		local player = minetest.get_player_by_name(self.context.player_name)
 		if player and player.get_meta then

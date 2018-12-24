@@ -147,7 +147,7 @@ nofs.register_widget("label", {
 
 nofs.register_widget("button", {
 	handle_field_event = function(item, player_name, field)
-		nofs.calliffunc(item.def.on_clicked) -- TODO:ARGUMENTS ?
+		item:trigger('on_clicked')
 	end,
 	init = function(item)
 			item:have_an_id()
@@ -195,9 +195,9 @@ nofs.register_widget("field", {
 	offset = { x = 0.3, y = 0.32 },
 	handle_field_event = function(item, player_name, field)
 		local context = item:get_context()
-		local oldvalue = context.value
+		local oldvalue = context.value or ''
 		context.value = field
-		if context.value ~= field then
+		if context.value ~= oldvalue then
 			item:trigger('on_changed', oldvalue)
 		end
 	end,
@@ -211,7 +211,6 @@ nofs.register_widget("field", {
 	render = function(item, offset)
 		local context = item:get_context()
 		local value = minetest.formspec_escape(context.value or '')
-
 		-- Render
 		if item.def.hidden == 'true' then
 			return string.format("pwdfield[%s;%s;%s]", fspossize(item, offset),
@@ -219,6 +218,12 @@ nofs.register_widget("field", {
 		else
 			return string.format("field[%s;%s;%s;%s]", fspossize(item, offset),
 				item.id, (item.def.label or ""), value)
+		end
+	end,
+	save = function(item)
+		-- Save to meta
+		if item.def.meta then
+			item.form:set_meta(item.def.meta, item:get_context().value)
 		end
 	end,
 })
@@ -239,7 +244,7 @@ nofs.register_widget("checkbox", {
 		local context = item:get_context()
 		local oldvalue = item.value
 		context.value = field
-		if context.value ~= field then
+		if context.value ~= oldvalue then
 			item:trigger('on_changed', oldvalue)
 		end
 		item:trigger('on_clicked')
