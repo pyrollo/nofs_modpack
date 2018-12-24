@@ -23,7 +23,7 @@ nofs_demo.name = minetest.get_current_modname()
 nofs_demo.path = minetest.get_modpath(nofs_demo.name)
 
 
-local main_form2 = nofs.new_form({
+local main_form2 = {
 	id = 'test_form',
 	type = 'vbox',
 	 { type = 'hbox',
@@ -44,7 +44,7 @@ local main_form2 = nofs.new_form({
 	{ type = "checkbox", width = 3, height =1, id = "chk1", label = "Select this",
 	on_clicked = function() print ('Checkbox pressed') end,},
 	{ type = "inventory", width = 7, height = 5, inventory = "current_player", list="main", listring=true },
-})
+}
 
 local data = {
 	player = "toto",
@@ -68,7 +68,7 @@ local data = {
 	},
 }
 
-local main_form = nofs.new_form({
+local main_form = {
 	id = 'test_form',
 	{ type= 'hbox',
 		{ type = 'vbox',
@@ -96,18 +96,15 @@ local main_form = nofs.new_form({
 			},
 		},
 	},
-})
+}
 
 minetest.register_on_joinplayer(function(player)
-	nofs.show_form(player:get_player_name(), main_form, data)
+	local player_name = player:get_player_name()
+	nofs.show_form(player_name, nofs.new_form(player_name, main_form), data)
 end)
 
 minetest.register_chatcommand("nofs", { params = "", description = "NOFS demo",
-	func = function(name, param)
-		local fs = main_form:render(data)
-		print()
-		print(fs)
-		print()
-		nofs.show_form(name, main_form, data)
+	func = function(player_name, param)
+		nofs.show_form(player_name, nofs.new_form(player_name, main_form), data)
 	end,
 })

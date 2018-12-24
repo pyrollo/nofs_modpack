@@ -19,12 +19,12 @@
 --]]
 
 Item = {}
+Item.__index = Item
 
 function Item:new(form, def, data)
 	assert(nofs.is_form(form), "First argument of Item:new should be a Form.")
 	assert(type(def) == "table", "Item definition must be a table.")
 	assert(type(def.type) == "string", "Item must have a type.")
-
 	local widget = nofs.get_widget(def.type)
 	assert(widget ~= nil, "Item type must be valid.")
 
@@ -34,15 +34,43 @@ function Item:new(form, def, data)
 		form = form,
 		def = def,
 		data = data,
---		type = def.type,
 		widget = widget,
 		pos = { x = 0, y = 0 },
 		size = { x = 0, y = 0 }
 	}
-
 	setmetatable(item, self)
-	self.__index = self -- Can be moved outside ?
+	item:trigger('init')
 	return item
+end
+
+-- Method that launches functions :)
+function Item:trigger(name, ...)
+	-- First try def specific trigger (override)
+	if self.def[name] and type(self.def[name]) == 'function' then
+		return self.def[name](self, ...)
+	end
+
+	-- Then try widget generic trigger
+	if self.widget[name] and type(self.widget[name]) == 'function' then
+		return self.widget[name](self, ...)
+	end
+end
+
+function Item:handle_field_event(player_name, field)
+	return self:trigger('handle_field_event', player_name, field)
+end
+
+function Item:have_an_id()
+	if not self.id then
+		self.id = self.form:get_unused_id(self.def.type)
+	end
+	if not self.registered_id then
+		self.form:register_id(self)
+	end
+end
+
+function Item:get_context()
+	return self.form:get_context(self)
 end
 
 function Item:resize()
@@ -61,32 +89,11 @@ end
 
 function Item:render(offset)
 	self.form:register_id(self)
-
-	if self.widget.render and type(self.widget.render) == 'function' then
-		return self.widget.render(self, offset)
-	else
-		return ''
-	end
+	-- Even "render" is overrideable
+	return self:trigger('render', offset) or ''
 end
 
-function Item:handle_field_event(player_name, field)
-	if self.widget.handle_field_event and
-		type(self.widget.handle_field_event) == 'function'
-	then
-		return self.widget.handle_field_event(self, player_name, field)
-	end
-end
 
-function Item:have_an_id()
-	if not self.id then
-		self.id = self.form:get_unused_id(self.def.type)
-		self.form:register_id(self)
-	end
-end
-
-function Item:get_context()
-	return self.form:get_context(self)
-end
 
 function nofs.is_item(item)
 	local meta = getmetatable(item)

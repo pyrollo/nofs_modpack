@@ -22,11 +22,15 @@
 -- Functions
 
 local function check_types_and_ids(def, ids)
-	local ids = ids or {}
-
-	assert(def.type, 'Item definition must have a type.')
-	local widget = nofs.get_widget(def.type)
-	assert(widget, 'Widget type "'..def.type..'" unknown.')
+	if ids ~= nil then
+		assert(def.type, 'Item definition must have a type.')
+		assert(def.type ~= 'form', 'Only root item can be of type "form".')
+		local widget = nofs.get_widget(def.type)
+		assert(widget, 'Widget type "'..def.type..'" unknown.')
+	else
+		-- Dont check root type, it's always "form"
+		ids = {}
+	end
 
 	if def.id then
 		assert(ids[def.id] == nil,
@@ -47,23 +51,24 @@ end
 -- item.def.id should not start with '.' (reserved) ?
 
 local Form = {}
+Form.__index = Form
 
-function Form:new(def)
+function Form:new(player_name, def)
 	assert(type(def) == "table", "Form definition must be a table.")
-
-	def.type = "form"
+	assert(player_name, "Player name must be specified.")
 	check_types_and_ids(def)
 
 	local form = {
 		def = table.copy(def),
 		instance = {},
 		ids = {},
-		contexts = {},
-		data = {},
+		item_contexts = {},
+		context = { player_name = player_name },
+		data = {}, -- TODO:Should be removed and replaced by other means
 	}
+	form.def.type = "form"
 
 	setmetatable(form, self)
-	self.__index = self
 	return form
 end
 
@@ -84,21 +89,67 @@ function Form:register_id(item)
 	end
 end
 
-function Form:get_context(item)
-	if not item.id then
-		item:have_an_id()
-	end
-	if not item.regitered_id then
-		self:register_id(item)
-	end
-	if not self.contexts[item.id] then
-		self.contexts[item.id] = {}
-	end
-	return self.contexts[item.id]
-end
-
 function Form:get_element_by_id(id)
 	return self.ids[id]
+end
+
+function Form:set_node(pos)
+	self.context.node_meta = minetest.get_meta(pos)
+	self.context.node_pos = table.copy(pos)
+end
+
+function Form:get_meta(meta)
+	local pos = meta:find(':')
+	assert(pos, "Reference to meta should be a string like node:xxx or player:yyy.")
+	local ctx, key = meta:sub(1,pos-1), meta:sub(pos+1)
+	if ctx == 'player' then
+		local player
+		if self.context.player_name then
+			player = minetest.get_player_by_name(self.context.player_name)
+		end
+		if player and player.get_meta then
+			return player:get_meta():get(key)
+		elseif player and player.get_attribute then
+			return player:get_attribute(key)
+		else
+			return string.format('${%s}', key)
+		end
+	end
+	if ctx == 'node' and self.context.node_meta then
+		return self.context.node_meta.get(key)
+	end
+end
+
+function Form:set_meta(meta, value)
+	local pos = meta:find(':')
+	assert(pos, "Reference to meta should be a string like node:xxx or player:yyy.")
+	local mtype, mname = meta:sub(1,pos-1), meta:sub(pos+1)
+	if ctx == 'player' then
+		local player = minetest.get_player_by_name(self.context.player_name)
+		if player and player.get_meta then
+			player:get_meta():set_string(key, value)
+		elseif player and player.set_attribute then
+			player:set_attribute(key, value)
+		else
+			minetest.log('warning', '[nofs] Tryed to set metadata on player but player not found.')
+		end
+	end
+	if ctx == 'node' then
+		if self.context.node_meta then
+			self.context.node_meta.set_string(key, value)
+		else
+			minetest.log('warning', '[nofs] Tryed to set metadata on node but no node set.')
+		end
+	end
+end
+
+-- Ensure persistance of item contexts
+function Form:get_context(item)
+	item:have_an_id()
+	if not self.item_contexts[item.id] then
+		self.item_contexts[item.id] = {}
+	end
+	return self.item_contexts[item.id]
 end
 
 function Form:build_items()
@@ -160,6 +211,6 @@ function nofs.is_form(form)
 	return meta and meta == Form
 end
 
-function nofs.new_form(def)
-	return Form:new(def)
+function nofs.new_form(player_name, def)
+	return Form:new(player_name, def)
 end

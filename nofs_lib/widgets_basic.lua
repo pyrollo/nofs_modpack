@@ -149,45 +149,31 @@ nofs.register_widget("button", {
 	handle_field_event = function(item, player_name, field)
 		nofs.calliffunc(item.def.on_clicked) -- TODO:ARGUMENTS ?
 	end,
+	init = function(item)
+			item:have_an_id()
+			if item.def.item ~= nil then
+				if item.def.image ~= nil then
+					minetest.log('warning',
+						'Button can\'t have "image" and "item" attributes at once. '..
+						'Ignoring "image" attribute.')
+				end
+			end
+		end,
 	render = function(item, offset)
-		-- Some warnings
-		if item.def.item ~= nil then
-			if item.def.image ~= nil then
-				minetest.log('warning',
-					'Button can\'t have "image" and "item" attributes at once. '..
-					'Ignoring "item" attribute.')
-			end
-			if item.exit == 'true' then
-				minetest.log('warning',
-					'Button can\'t have exit=true and item attributes at once. '..
-					'Ignoring exit=true attribute.')
-			end
-		end
-
-		item:have_an_id()
-
-		-- Now, render !
-		if item.def.image then
-			if item.exit == "true" then
-				return string.format("image_button_exit[%s;%s;%s;%s]",
-					fspossize(item, offset), item.def.image, item.id,
-					item.def.label or "")
-			else
-				return string.format("image_button[%s;%s;%s;%s]",
-					fspossize(item, offset), item.def.image, item.id,
-					item.def.label or "")
-			end
-		elseif item.item then
+		if item.def.item then
 			return string.format("item_image_button[%s;%s;%s;%s]",
 				fspossize(item, offset), item.def.item, item.id,
 				item.def.label or "")
-		else -- Using image buttons because normal buttons does not size vertically
+		else
+			-- Using image buttons because normal buttons does not size vertically
 			if item.def.exit == "true" then
-				return string.format("image_button_exit[%s;;%s;%s]",
-					fspossize(item, offset), item.id, item.def.label or "")
+				return string.format("image_button_exit[%s;%s;%s;%s]",
+					fspossize(item, offset), item.def.image or "", item.id,
+					item.def.label or "")
 			else
-				return string.format("image_button[%s;;%s;%s]",
-					fspossize(item, offset), item.id, item.def.label or "")
+				return string.format("image_button[%s;%s;%s;%s]",
+					fspossize(item, offset), item.def.image or "", item.id,
+					item.def.label or "")
 			end
 		end
 	end,
@@ -208,22 +194,23 @@ nofs.register_widget("field", {
 	holds_value = true,
 	offset = { x = 0.3, y = 0.32 },
 	handle_field_event = function(item, player_name, field)
-		if item.value ~= field then
-			local value = item.value
-			item.value = field
-			-- TODO:Arguments
-			nofs.calliffunc(item.def.on_changed, value)
+		local context = item:get_context()
+		local oldvalue = context.value
+		context.value = field
+		if context.value ~= field then
+			item:trigger('on_changed', oldvalue)
 		end
-		item.value = field
+	end,
+	init = function(item)
+		item:have_an_id()
+		local context = item:get_context()
+		if item.def.meta then
+			context.value = context.value or item.form:get_meta(item.def.meta)
+		end
 	end,
 	render = function(item, offset)
-		item:have_an_id()
-		local value = item.value or ""
-		-- TODO : Should data be managed here or when validating ?
-		if item.def.data then
-			value = item.data[item.def.data]
-		end
-		value = minetest.formspec_escape(value)
+		local context = item:get_context()
+		local value = minetest.formspec_escape(context.value or '')
 
 		-- Render
 		if item.def.hidden == 'true' then
@@ -242,25 +229,34 @@ nofs.register_widget("field", {
 --  - width, height
 --	- label
 -- Triggers:
---  - on_clicked
---  - on_changed
+--  - on_clicked(item)
+--  - on_changed(item, oldvalue)
+-- Context:
+--  value: value of the checkbox
 
 nofs.register_widget("checkbox", {
-	holds_value = true,
 	handle_field_event = function(item, player_name, field)
-		if item.value ~= field then
-			local value = item.value
-			item.value = field
-			-- TODO:Arguments
-			nofs.calliffunc(item.def.on_changed, value)
+		local context = item:get_context()
+		local oldvalue = item.value
+		context.value = field
+		if context.value ~= field then
+			item:trigger('on_changed', oldvalue)
 		end
-		nofs.calliffunc(item.def.on_clicked) -- TODO:ARGUMENTS ?
+		item:trigger('on_clicked')
+	end,
+	init = function(item)
+		item:have_an_id()
+		local context = item:get_contect()
+		if item.def.meta then
+			context.value = context.value or item.form:get_meta(item.def.meta)
+		end
 	end,
 	render = function(item, offset)
 		item:have_an_id()
+		local context = item:get_context()
 		return string.format("checkbox[%s;%s;%s;%s]",
 			fspos(item, offset), item.id, (item.def.label or ""),
-			item.value == "true" and "true" or "fasle")
+			context.value == "true" and "true" or "fasle")
 	end,
 })
 
