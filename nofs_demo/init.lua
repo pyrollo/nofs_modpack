@@ -68,45 +68,101 @@ local data = {
 	},
 }
 
-local main_form = {
+local inspector_form = {
 	id = 'test_form',
-	{ type= 'hbox',
-		{ type = 'vbox',
-			{ type = 'label', width = 2, height = 1, value = 'Attribute "test"',	},
-			{ id = 'test', type = 'field', height = 1,	width = 4, meta = "player:test" },
-			{ type = 'hbox',
-				{ type = 'button', width = 2, height = 1, label="Hello",
-					on_clicked = function() print('Hello !') end,},
-				{	type = 'button', height = 1,	width = 2, label = 'Exit', exit = 'true',
-					on_clicked = function(item) item.form:save() end
-				},
+	{ type = 'vbox',
+		data = function(form)
+			local pos = form:get_context().pos
+			local node = minetest.get_node(pos)
+			local ndef = minetest.registered_nodes[node.name]
+			return { {
+				title = string.format("Node: %s at %s\n", node.name, minetest.pos_to_string(pos)),
+				param1 = string.format("Param1 (%s): %s\n", ndef.paramtype, node.param1),
+				param2 = string.format("Param2 (%s): %s\n", ndef.paramtype2, node.param2),
+			} }
+		end,
+		-- TODO: Creer un raccourci pour cette operation repetitive qui va être courrante
+		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().data.title end },
+		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().data.param1 end },
+		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().data.param2 end },
+	},
+	{ type = 'label', height = 1, width = 6, label = "Metadata:" },
+	{ type = 'vbox',
+		max_items = 3,
+		overflow = 'scrollbar',
+		{
+			type = 'hbox',
+			data = function(form)
+					local data = {}
+					local pos = form:get_context().pos
+					if pos then
+						local meta = minetest.get_meta(pos)
+						local tab = meta:to_table()
+						for key, value in pairs(tab.fields) do
+							data[#data+1] = { key = key, value = value}
+						end
+					end
+					return data
+				end,
+			{ type = 'label', width = 2, height = 1,
+				init = function(item)
+					item:get_context().label = item.parent:get_context().data.key
+				end,
+			},
+			{ type = 'field', width = 4, height = 1,
+				init = function(item)
+					item:get_context().value = item.parent:get_context().data.value
+				end,
+				save = function(item)
+					local meta = minetest.get_meta(item.form:get_context().pos)
+					meta:set_string(item.parent:get_context().data.key, item:get_context().value)
+				end,
+			},
+			{ type = 'button', width = 1, height = 1, label="...",
+				on_clicked = function()
+					local context = item.parent:get_context()
+				end,
 			},
 		},
-		{ type = 'vbox',
-			max_items = 6,
-			overflow = 'scrollbar',
-			{
-				type = 'hbox',
-				data = "meta", -- Si meta contient des enfants, repete, sinon utilise ses champs
-				{ type = 'label', width = 2, height = 1, data="name"},
-				{ type = 'field', width = 2, height = 1, data="value",
-					on_changed = function(item) print(item.form:get_element_by_id('test'):get_value()) end
-				},
-				{ type = 'button', width = 1, height = 1, label="...",
-					on_clicked = function() print('clicked') end,
-				},
-			},
+	},
+	{ type = 'hbox',
+		{ type = 'button', width = 2, height = 1, label="Cancel", exit = 'true', },
+		{	type = 'button', height = 1,	width = 2, label = 'Save', exit = 'true',
+			on_clicked = function(item) item.form:save() end
 		},
 	},
 }
 
+
+minetest.register_tool("nofs_demo:node_inspector", {
+    description = "Node inspector dev tool",
+    inventory_image = "nofs_demo_inspector.png",
+    liquids_pointable = true,
+    on_use = function(itemstack, user, pointed_thing)
+        if pointed_thing.type=="node" then
+					local form = nofs.new_form(user:get_player_name(), inspector_form)  -- TODO:ADD extra context
+					form:get_context().pos = pointed_thing.under
+					nofs.show_form(user:get_player_name(), form) -- TODO: Player specified twice...
+	      elseif pointed_thing.type=="object" then
+          print('Not implemented yet')
+        end
+      end
+})
+--[[
+
+local function demo(player_name)
+	local form = nofs.new_form(player_name, main_form)
+	form:get_context().pos = { x = 0, y = 0, z = 0 }
+end
+
 minetest.register_on_joinplayer(function(player)
 	local player_name = player:get_player_name()
-	nofs.show_form(player_name, nofs.new_form(player_name, main_form), data)
+	demo(player_name)
 end)
 
 minetest.register_chatcommand("nofs", { params = "", description = "NOFS demo",
 	func = function(player_name, param)
-		nofs.show_form(player_name, nofs.new_form(player_name, main_form), data)
+		demo(player_name)
 	end,
 })
+]]

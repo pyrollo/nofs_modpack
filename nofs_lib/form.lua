@@ -18,27 +18,6 @@
 	along with signs.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
---[[
-On a un problème : lorsque le "on_clicked" d'un bouton est déclenché, les autres
-triggers, sur les champs par exemple, n'ont pas encore été déclenchés... problème
-de priorité. Comment faire ?
-
-Prioriser par type de widget ?
-Par type de déclencheur ? Mais dans ce cas on ne connait pas les déclencheurs lancés par "handle_field_events"
-Ou alors il faudrait les "enqueuer" ? et les déclencher dans un ordre défini ?
-Faire une trigger queue, avec priorités :
-on_changed
-on_clicked
-]]
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-
-
 --------------------------------------------------------------------------------
 -- Functions
 
@@ -82,10 +61,10 @@ function Form:new(player_name, def)
 	local form = {
 		def = table.copy(def),
 		ids = {},            -- Items by id
-		item = {},           -- Root item
+		item = {},           -- Root item and descendants.
 		item_contexts = {},  -- Persistant item contexts
-		context = { player_name = player_name },
-		data = {}, -- TODO:Should be removed and replaced by other means
+		form_context = {},   -- Global form context
+		player_name = player_name,
 		trigger_queues = { [1] = {}, [2] = {}, }
 	}
 	form.def.type = "form"
@@ -146,8 +125,8 @@ function Form:save()
 end
 
 function Form:set_node(pos)
-	self.context.node_meta = minetest.get_meta(pos)
-	self.context.node_pos = table.copy(pos)
+	self.node_meta = minetest.get_meta(pos)
+	self.node_pos = table.copy(pos)
 end
 
 function Form:get_meta(meta)
@@ -156,8 +135,8 @@ function Form:get_meta(meta)
 	local ctx, key = meta:sub(1,pos-1), meta:sub(pos+1)
 	if ctx == 'player' then
 		local player
-		if self.context.player_name then
-			player = minetest.get_player_by_name(self.context.player_name)
+		if self.player_name then
+			player = minetest.get_player_by_name(self.player_name)
 		end
 		if player and player.get_meta then
 			return player:get_meta():get(key)
@@ -167,8 +146,8 @@ function Form:get_meta(meta)
 			return string.format('${%s}', key)
 		end
 	end
-	if ctx == 'node' and self.context.node_meta then
-		return self.context.node_meta.get(key)
+	if ctx == 'node' and self.node_meta then
+		return self.node_meta.get(key)
 	end
 end
 
@@ -177,7 +156,7 @@ function Form:set_meta(meta, value)
 	assert(pos, "Reference to meta should be a string like node:xxx or player:yyy.")
 	local ctx, key = meta:sub(1,pos-1), meta:sub(pos+1)
 	if ctx == 'player' then
-		local player = minetest.get_player_by_name(self.context.player_name)
+		local player = minetest.get_player_by_name(self.player_name)
 		if player and player.get_meta then
 			player:get_meta():set_string(key, value)
 		elseif player and player.set_attribute then
@@ -187,8 +166,8 @@ function Form:set_meta(meta, value)
 		end
 	end
 	if ctx == 'node' then
-		if self.context.node_meta then
-			self.context.node_meta.set_string(key, value)
+		if self.node_meta then
+			self.node_meta.set_string(key, value)
 		else
 			minetest.log('warning', '[nofs] Tryed to set metadata on node but no node set.')
 		end
@@ -197,45 +176,63 @@ end
 
 -- Ensure persistance of item contexts
 function Form:get_context(item)
-	item:have_an_id()
-	if not self.item_contexts[item.id] then
-		self.item_contexts[item.id] = {}
+	if item then
+		item:have_an_id()
+		if not self.item_contexts[item.id] then
+			self.item_contexts[item.id] = {}
+		end
+		return self.item_contexts[item.id]
+	else
+		return self.form_context
 	end
-	return self.item_contexts[item.id]
 end
 
 function Form:build_items()
-	local function build_items(def, data)
-		local item = nofs.new_item(self, def, data)
-		for _, childdef in ipairs(def) do
-			if childdef.data then
-				if data[childdef.data] and type(data[childdef.data]) == "table" then
-					-- Data has children, multiple instances
-					if #data[childdef.data] then
-						for _, childdata in ipairs(data[childdef.data]) do
-							item[#item+1] = build_items(childdef, childdata)
-						end
-					else
-						-- cas d'un enfant avec un data={} ne contenant que des champs
-						-- A vérifier l'utilité
-						item[#item+1] = build_items(childdef, data[childdef.data])
-					end
-				else
-					-- Cas habituel d'un enfant adressant directement un champ des data
-					item[#item+1] = build_items(childdef, data)
+	local function create_children(parent, def)
+		local item
+		if def.data and parent then
+			local dataset
+			if type(def.data) == "table" then
+				dataset = table.copy(def.data)
+			elseif type(def.data) == "function" then
+				dataset = table.copy(def.data(self))
+			end
+			assert(parent or (dataset and #dataset == 1),
+				"Root form item must have exactly one instance")
+			if not dataset or #dataset == 0 then
+				-- TODO : Add a "no data" widget possibility
+				return -- No data, no occurence at all
+			end
+
+			for _, data in ipairs(dataset) do
+				item = nofs.new_item(parent, def)
+				local context = item:get_context()
+				context.data = data
+
+				for _, childdef in ipairs(def) do
+					create_children(item, childdef)
 				end
+			end
+		else
+			if def.data then
+				minetest.log("warning", '"data" attribute ignored for root element')
+			end
+			if parent then
+				item= nofs.new_item(parent, def)
 			else
-				-- Cas d'un enfant sans data
-				item[#item+1] = build_items(childdef, data)
+				item= nofs.new_item(self, def)
+				self.item = item
+			end
+			for _, childdef in ipairs(def) do
+				create_children(item, childdef)
 			end
 		end
-		return item
 	end
 
 	-- Empty ids
 	self.ids = {}
 	-- Instance creation
-	self.item = build_items(self.def, self.data)
+	create_children(nil, self.def)
 end
 
 function Form:render()
@@ -272,13 +269,13 @@ function Form:receive(fields)
 	if suspicious then
 		minetest.log('warning',
 			string.format('[nofs] Suspicious formspec data recieved from player "%s".',
-				self.context.player_name))
+				self.player_name))
 	end
 
 	-- Field events
 	for id, item in pairs(self.ids) do
 		if fields[id] then
-			item:handle_field_event(self.context.player_name, fields[id])
+			item:handle_field_event(self.player_name, fields[id])
 		end
 	end
 
@@ -290,6 +287,13 @@ function nofs.is_form(form)
 	return meta and meta == Form
 end
 
-function nofs.new_form(player_name, def)
-	return Form:new(player_name, def)
+function nofs.new_form(player_name, def, extra_context)
+	local form = Form:new(player_name, def)
+	if extra_context and type(extra_context) == 'table' then
+		local context = form:get_context()
+		for key, value in pairs(extra_context) do
+			context[key] = value
+		end
+	end
+	return form
 end

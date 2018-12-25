@@ -21,27 +21,35 @@
 Item = {}
 Item.__index = Item
 
-function Item:new(form, def, data)
-	assert(not nofs.is_system_key(def.id or ""),
-		string.format('Cannot use "%s" as id, it is a reserved word.', def.id))
-	assert(nofs.is_form(form), 'First argument of Item:new should be a Form.')
+function Item:new(parent, def)
 	assert(type(def) == "table", 'Item definition must be a table.')
 	assert(type(def.type) == "string", 'Item must have a type.')
+	assert(not nofs.is_system_key(def.id or ""),
+		string.format('Cannot use "%s" as id, it is a reserved word.', def.id))
 	local widget = nofs.get_widget(def.type)
 	assert(widget ~= nil, 'Item type must be valid.')
+	assert(nofs.is_item(parent) or nofs.is_form(parent),
+		'First argument of Item:new should be a Form or an Item.')
+
 
 	local item = {
 		id = def.id,
 		registered_id = false,
-		form = form,
+		parent = nofs.is_item(parent) and parent or nil,
+		form = nofs.is_form(parent) and parent or parent.form,
 		def = def,
-		data = data,
 		widget = widget,
 		pos = { x = 0, y = 0 },
-		size = { x = 0, y = 0 }
+		size = { x = 0, y = 0 },
 	}
 	setmetatable(item, self)
+
+	if item.parent then
+		item.parent[#item.parent + 1] = item
+	end
+
 	item:call('init')
+
 	return item
 end
 
@@ -78,6 +86,16 @@ end
 
 function Item:get_context()
 	return self.form:get_context(self)
+end
+
+function Item:get_attribute(name)
+	if self.id then
+		local context = self.form.item_contexts[self.id]
+		if context and context[name] then
+			return context[name]
+		end
+	end
+	return self.def[name]
 end
 
 function Item:resize()
