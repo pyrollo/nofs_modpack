@@ -18,6 +18,27 @@
 	along with signs.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--[[
+On a un problème : lorsque le "on_clicked" d'un bouton est déclenché, les autres
+triggers, sur les champs par exemple, n'ont pas encore été déclenchés... problème
+de priorité. Comment faire ?
+
+Prioriser par type de widget ?
+Par type de déclencheur ? Mais dans ce cas on ne connait pas les déclencheurs lancés par "handle_field_events"
+Ou alors il faudrait les "enqueuer" ? et les déclencher dans un ordre défini ?
+Faire une trigger queue, avec priorités :
+on_changed
+on_clicked
+]]
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+
 --------------------------------------------------------------------------------
 -- Functions
 
@@ -60,11 +81,12 @@ function Form:new(player_name, def)
 
 	local form = {
 		def = table.copy(def),
-		instance = {},
-		ids = {},
-		item_contexts = {},
+		ids = {},            -- Items by id
+		item = {},           -- Root item
+		item_contexts = {},  -- Persistant item contexts
 		context = { player_name = player_name },
 		data = {}, -- TODO:Should be removed and replaced by other means
+		trigger_queues = { [1] = {}, [2] = {}, }
 	}
 	form.def.type = "form"
 
@@ -73,11 +95,13 @@ function Form:new(player_name, def)
 end
 
 function Form:get_unused_id(prefix)
+	prefix = prefix or "other"
+	assert(not nofs.is_system_key(prefix), "Prefix must not be a system key.")
 	local i = 1
-	while self.ids[(prefix or "other")..i] do
+	while self.ids[prefix..i] do
 		i = i + 1
 	end
-	return (prefix or "other")..i
+	return prefix..i
 end
 
 function Form:register_id(item)
@@ -93,14 +117,32 @@ function Form:get_element_by_id(id)
 	return self.ids[id]
 end
 
-function Form:trigger_items(name, ...)
-	for _, item in pairs(self.ids) do
-		item:trigger(name, ...)
+-- Priority in trigger execution, lower is first
+local trigger_queues = { on_clicked = 2,	default = 1, }
+
+function Form:trigger(item, name, ...)
+	local index = trigger_queues[name] or trigger_queues.default
+	if self.trigger_queues[index] == nil then
+		self.trigger_queues[index] = {}
+	end
+	table.insert(self.trigger_queues[index],
+		{ item = item, name = name, args = {...}})
+end
+
+function Form:run_triggers()
+	for _, queue in ipairs(self.trigger_queues) do
+		while #queue > 0 do
+			local trigger = queue[#queue]
+			queue[#queue] = nil
+			trigger.item:call(trigger.name, unpack(trigger.args))
+		end
 	end
 end
 
 function Form:save()
-	self:trigger_items('save')
+	for _, item in pairs(self.ids) do
+		item:call('save')
+	end
 end
 
 function Form:set_node(pos)
@@ -214,6 +256,33 @@ end
 
 function Form:update()
 	self.updated = true
+end
+
+function Form:receive(fields)
+	local suspicious = false
+	for key, value in pairs(fields) do
+		local item = self.ids[key]
+		if not nofs.is_system_key(key) and not item then
+			minetest.log('warning',
+				string.format('[nofs] Unwanted field "%s" for form "%s".',
+					key, self.item.id))
+			suspicious = true
+		end
+	end
+	if suspicious then
+		minetest.log('warning',
+			string.format('[nofs] Suspicious formspec data recieved from player "%s".',
+				self.context.player_name))
+	end
+
+	-- Field events
+	for id, item in pairs(self.ids) do
+		if fields[id] then
+			item:handle_field_event(self.context.player_name, fields[id])
+		end
+	end
+
+	self:run_triggers()
 end
 
 function nofs.is_form(form)

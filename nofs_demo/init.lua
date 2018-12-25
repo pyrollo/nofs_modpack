@@ -73,7 +73,7 @@ local main_form = {
 	{ type= 'hbox',
 		{ type = 'vbox',
 			{ type = 'label', width = 2, height = 1, value = 'Attribute "test"',	},
-			{ id = 'field 1', type = 'field', height = 1,	width = 4, meta = "player:test" },
+			{ id = 'test', type = 'field', height = 1,	width = 4, meta = "player:test" },
 			{ type = 'hbox',
 				{ type = 'button', width = 2, height = 1, label="Hello",
 					on_clicked = function() print('Hello !') end,},
@@ -89,7 +89,9 @@ local main_form = {
 				type = 'hbox',
 				data = "meta", -- Si meta contient des enfants, repete, sinon utilise ses champs
 				{ type = 'label', width = 2, height = 1, data="name"},
-				{ type = 'field', width = 2, height = 1, data="value"},
+				{ type = 'field', width = 2, height = 1, data="value",
+					on_changed = function(item) print(item.form:get_element_by_id('test'):get_value()) end
+				},
 				{ type = 'button', width = 1, height = 1, label="...",
 					on_clicked = function() print('clicked') end,
 				},

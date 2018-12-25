@@ -22,11 +22,13 @@ Item = {}
 Item.__index = Item
 
 function Item:new(form, def, data)
-	assert(nofs.is_form(form), "First argument of Item:new should be a Form.")
-	assert(type(def) == "table", "Item definition must be a table.")
-	assert(type(def.type) == "string", "Item must have a type.")
+	assert(not nofs.is_system_key(def.id or ""),
+		string.format('Cannot use "%s" as id, it is a reserved word.', def.id))
+	assert(nofs.is_form(form), 'First argument of Item:new should be a Form.')
+	assert(type(def) == "table", 'Item definition must be a table.')
+	assert(type(def.type) == "string", 'Item must have a type.')
 	local widget = nofs.get_widget(def.type)
-	assert(widget ~= nil, "Item type must be valid.")
+	assert(widget ~= nil, 'Item type must be valid.')
 
 	local item = {
 		id = def.id,
@@ -39,25 +41,30 @@ function Item:new(form, def, data)
 		size = { x = 0, y = 0 }
 	}
 	setmetatable(item, self)
-	item:trigger('init')
+	item:call('init')
 	return item
 end
 
 -- Method that launches functions :)
-function Item:trigger(name, ...)
-	-- First try def specific trigger (override)
+function Item:call(name, ...)
+	-- First try def specific function (override)
 	if self.def[name] and type(self.def[name]) == 'function' then
 		return self.def[name](self, ...)
 	end
 
-	-- Then try widget generic trigger
+	-- Then try widget generic function
 	if self.widget[name] and type(self.widget[name]) == 'function' then
 		return self.widget[name](self, ...)
 	end
 end
 
+-- Enqueue trigger in form trigger queue
+function Item:trigger(name, ...)
+	self.form:trigger(self, name, ...)
+end
+
 function Item:handle_field_event(player_name, field)
-	return self:trigger('handle_field_event', player_name, field)
+	return self:call('handle_field_event', player_name, field)
 end
 
 function Item:have_an_id()
@@ -90,10 +97,15 @@ end
 function Item:render(offset)
 	self.form:register_id(self)
 	-- Even "render" is overrideable
-	return self:trigger('render', offset) or ''
+	return self:call('render', offset) or ''
 end
 
-
+function Item:get_value()
+	local context = self.form:get_context(self)
+	if context then
+		return context.value
+	end
+end
 
 function nofs.is_item(item)
 	local meta = getmetatable(item)

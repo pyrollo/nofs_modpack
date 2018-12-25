@@ -23,3 +23,7 @@ function nofs.calliffunc(fct, ...)
 		return fct(...)
 	end
 end
+
+function nofs.is_system_key(key)
+	return key == "quit" or key:sub(1,4) == "key_"
+end
