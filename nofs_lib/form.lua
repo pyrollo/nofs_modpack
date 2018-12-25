@@ -19,93 +19,267 @@
 --]]
 
 --------------------------------------------------------------------------------
---- Form class
+-- Functions
+
+local function check_types_and_ids(def, ids)
+	if ids ~= nil then
+		assert(def.type, 'Item definition must have a type.')
+		assert(def.type ~= 'form', 'Only root item can be of type "form".')
+		local widget = nofs.get_widget(def.type)
+		assert(widget, 'Widget type "'..def.type..'" unknown.')
+	else
+		-- Dont check root type, it's always "form"
+		ids = {}
+	end
+
+	if def.id then
+		assert(ids[def.id] == nil,
+			'Id "'..def.id..'" already used in the same form.')
+		ids[def.id] = def
+	end
+
+	for _, child in ipairs(def) do
+		check_types_and_ids(child, ids)
+	end
+end
+
+--------------------------------------------------------------------------------
+-- Form class
+
+-- TODO: Checks :
+-- item.def.max_items integer > 1
+-- item.def.id should not start with '.' (reserved) ?
 
 local Form = {}
---nofs.Form = Form
+Form.__index = Form
 
-function Form:new(def)
-	local function collect_ids(element, ids)
-		if element.id then
-			assert(ids[element.id] == nil,
-				'Id "'..element.id..'" already used in the same form.')
-			ids[element.id] = element
-		end
-
-		for _, child in ipairs(element) do
-			collect_ids(child, ids)
-		end
-	end
-
-	local function add_missing_ids_and_check_types(element, ids)
-		assert(element.type, 'Element must have a type.')
-		local widget = nofs.get_widget(element.type)
-		assert(widget, 'Element type "'..element.type..'" unknown.')
-
-		if not element.id and (widget.needs_id or widget.holds_value) then
-			local i = 1
-			while ids[element.type..i] do
-				i = i + 1
-			end
-			element.id = element.type..i
-			ids[element.id] = element
-		end
-
-		for index, child in ipairs(element) do
-			add_missing_ids_and_check_types(child, ids)
-		end
-	end
-
-	if type(def) ~= "table" then
-		minetest.log("error",
-			"[nofs] Form definition must be a table.")
-		return nil
-	end
+function Form:new(player_name, def)
+	assert(type(def) == "table", "Form definition must be a table.")
+	assert(player_name, "Player name must be specified.")
+	check_types_and_ids(def)
 
 	local form = {
-		root = table.copy(def),
-		ids = {},
+		def = table.copy(def),
+		ids = {},            -- Items by id
+		item = {},           -- Root item and descendants.
+		item_contexts = {},  -- Persistant item contexts
+		form_context = {},   -- Global form context
+		player_name = player_name,
+		trigger_queues = { [1] = {}, [2] = {}, }
 	}
-
-	form.root.type = form.root.type or "vbox"
-	form.root.pos = { x=0, y=0 }
-
-	collect_ids(form.root, form.ids)
-	add_missing_ids_and_check_types(form.root, form.ids)
+	form.def.type = "form"
 
 	setmetatable(form, self)
-	self.__index = self
 	return form
 end
 
-function Form:render()
-	local function size_element(element)
-		-- first, size children (if any)
-		for _, child in ipairs(element) do
-			size_element(child)
+function Form:get_unused_id(prefix)
+	prefix = prefix or "other"
+	assert(not nofs.is_system_key(prefix), "Prefix must not be a system key.")
+	local i = 1
+	while self.ids[prefix..i] do
+		i = i + 1
+	end
+	return prefix..i
+end
+
+function Form:register_id(item)
+	if item.id and not item.registered_id then
+		assert(self.ids[item.id] == nil,
+			'Id "'..item.id..'" already used in the same form.')
+		self.ids[item.id] = item
+		item.registered_id = true
+	end
+end
+
+function Form:get_element_by_id(id)
+	return self.ids[id]
+end
+
+-- Priority in trigger execution, lower is first
+local trigger_queues = { on_clicked = 2,	default = 1, }
+
+function Form:trigger(item, name, ...)
+	local index = trigger_queues[name] or trigger_queues.default
+	if self.trigger_queues[index] == nil then
+		self.trigger_queues[index] = {}
+	end
+	table.insert(self.trigger_queues[index],
+		{ item = item, name = name, args = {...}})
+end
+
+function Form:run_triggers()
+	for _, queue in ipairs(self.trigger_queues) do
+		while #queue > 0 do
+			local trigger = queue[#queue]
+			queue[#queue] = nil
+			trigger.item:call(trigger.name, unpack(trigger.args))
 		end
+	end
+end
 
-		local widget = nofs.get_widget(element.type)
+function Form:save()
+	for _, item in pairs(self.ids) do
+		item:call('save')
+	end
+end
 
-		if widget.size and type(widget.size) == 'function' then
-			-- Specific sizing method
-			widget.size(element)
-		elseif widget.size and type(widget.size) == 'table' then
-			-- Default size
-			element.size = {
-				x = element.width or widget.size.x,
-				y = element.height or widget.size.y,
-			}
+function Form:set_node(pos)
+	self.node_meta = minetest.get_meta(pos)
+	self.node_pos = table.copy(pos)
+end
+
+function Form:get_meta(meta)
+	local pos = meta:find(':')
+	assert(pos, "Reference to meta should be a string like node:xxx or player:yyy.")
+	local ctx, key = meta:sub(1,pos-1), meta:sub(pos+1)
+	if ctx == 'player' then
+		local player
+		if self.player_name then
+			player = minetest.get_player_by_name(self.player_name)
+		end
+		if player and player.get_meta then
+			return player:get_meta():get(key)
+		elseif player and player.get_attribute then
+			return player:get_attribute(key)
 		else
-			element.size = { x = element.width, y = element.height }
+			return string.format('${%s}', key)
+		end
+	end
+	if ctx == 'node' and self.node_meta then
+		return self.node_meta.get(key)
+	end
+end
+
+function Form:set_meta(meta, value)
+	local pos = meta:find(':')
+	assert(pos, "Reference to meta should be a string like node:xxx or player:yyy.")
+	local ctx, key = meta:sub(1,pos-1), meta:sub(pos+1)
+	if ctx == 'player' then
+		local player = minetest.get_player_by_name(self.player_name)
+		if player and player.get_meta then
+			player:get_meta():set_string(key, value)
+		elseif player and player.set_attribute then
+			player:set_attribute(key, value)
+		else
+			minetest.log('warning', '[nofs] Tryed to set metadata on player but player not found.')
+		end
+	end
+	if ctx == 'node' then
+		if self.node_meta then
+			self.node_meta.set_string(key, value)
+		else
+			minetest.log('warning', '[nofs] Tryed to set metadata on node but no node set.')
+		end
+	end
+end
+
+-- Ensure persistance of item contexts
+function Form:get_context(item)
+	if item then
+		item:have_an_id()
+		if not self.item_contexts[item.id] then
+			self.item_contexts[item.id] = {}
+		end
+		return self.item_contexts[item.id]
+	else
+		return self.form_context
+	end
+end
+
+function Form:build_items()
+	local function create_children(parent, def)
+		local item
+		if def.data and parent then
+			local dataset
+			if type(def.data) == "table" then
+				dataset = table.copy(def.data)
+			elseif type(def.data) == "function" then
+				dataset = table.copy(def.data(self))
+			end
+			assert(parent or (dataset and #dataset == 1),
+				"Root form item must have exactly one instance")
+			if not dataset or #dataset == 0 then
+				-- TODO : Add a "no data" widget possibility
+				return -- No data, no occurence at all
+			end
+
+			for _, data in ipairs(dataset) do
+				item = nofs.new_item(parent, def)
+				local context = item:get_context()
+				context.data = data
+
+				for _, childdef in ipairs(def) do
+					create_children(item, childdef)
+				end
+			end
+		else
+			if def.data then
+				minetest.log("warning", '"data" attribute ignored for root element')
+			end
+			if parent then
+				item= nofs.new_item(parent, def)
+			else
+				item= nofs.new_item(self, def)
+				self.item = item
+			end
+			for _, childdef in ipairs(def) do
+				create_children(item, childdef)
+			end
 		end
 	end
 
+	-- Empty ids
+	self.ids = {}
+	-- Instance creation
+	create_children(nil, self.def)
+end
 
-	size_element(self.root)
+function Form:render()
+	local function size_items(item)
+		-- first, size children (if any)
+		for _, child in ipairs(item) do
+			size_items(child)
+		end
+		item:resize()
+	end
 
-	return string.format("size[%g,%g]%s", self.root.size.x, self.root.size.y,
-		nofs.get_widget(self.root.type).render(self.root, {x = 0, y = 0}))
+	self:build_items()
+
+	size_items(self.item)
+
+	return self.item:render({ x = 0, y = 0 })
+end
+
+function Form:update()
+	self.updated = true
+end
+
+function Form:receive(fields)
+	local suspicious = false
+	for key, value in pairs(fields) do
+		local item = self.ids[key]
+		if not nofs.is_system_key(key) and not item then
+			minetest.log('warning',
+				string.format('[nofs] Unwanted field "%s" for form "%s".',
+					key, self.item.id))
+			suspicious = true
+		end
+	end
+	if suspicious then
+		minetest.log('warning',
+			string.format('[nofs] Suspicious formspec data recieved from player "%s".',
+				self.player_name))
+	end
+
+	-- Field events
+	for id, item in pairs(self.ids) do
+		if fields[id] then
+			item:handle_field_event(self.player_name, fields[id])
+		end
+	end
+
+	self:run_triggers()
 end
 
 function nofs.is_form(form)
@@ -113,6 +287,13 @@ function nofs.is_form(form)
 	return meta and meta == Form
 end
 
-function nofs.new_form(def)
-	return Form:new(def)
+function nofs.new_form(player_name, def, extra_context)
+	local form = Form:new(player_name, def)
+	if extra_context and type(extra_context) == 'table' then
+		local context = form:get_context()
+		for key, value in pairs(extra_context) do
+			context[key] = value
+		end
+	end
+	return form
 end

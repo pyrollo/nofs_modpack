@@ -18,123 +18,277 @@
 	along with signs.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
+local function fsesc(text)
+	return minetest.formspec_escape(text or '')
+end
+
 -- Standard offset position and size
-local function fspos(element, offset)
-	local widgetoffset = nofs.get_widget(element.type).offset
+local function fspos(item, offset)
+	local widgetoffset = item.widget.offset
 	if widgetoffset then
 		return string.format("%g,%g",
-			element.pos.x + offset.x + widgetoffset.x,
-			element.pos.y + offset.y + widgetoffset.y)
+			item.pos.x + offset.x + widgetoffset.x,
+			item.pos.y + offset.y + widgetoffset.y)
 	else
 		return string.format("%g,%g",
-			element.pos.x + offset.x, element.pos.y + offset.y)
+			item.pos.x + offset.x, item.pos.y + offset.y)
 	end
 end
 
-local function fspossize(element, offset)
-	local widgetoffset = nofs.get_widget(element.type).offset
+local function fspossize(item, offset)
+	local widgetoffset = item.widget.offset
 	if widgetoffset then
 		return string.format("%g,%g;%g,%g",
-			element.pos.x + offset.x + widgetoffset.x,
-			element.pos.y + offset.y + widgetoffset.y,
-			element.size.x, element.size.y)
+			item.pos.x + offset.x + widgetoffset.x,
+			item.pos.y + offset.y + widgetoffset.y,
+			item.size.x, item.size.y)
 	else
 		return string.format("%g,%g;%g,%g",
-			element.pos.x + offset.x, element.pos.y + offset.y,
-			element.size.x, element.size.y)
+			item.pos.x + offset.x, item.pos.y + offset.y,
+			item.size.x, item.size.y)
 	end
 end
 
 -- BASIC WIDGETS
 ----------------
 
+local function scrollbar_get_index(value, min, max)
+	return math.floor(value / 1000 * (max-min)) + min
+end
+local function scrollbar_get_value(index, min, max)
+	return math.floor(1000 * (index-min) / ((max-min) or 1 ))
+end
+
+-- scrollbar
+-- =========
+-- Attributes
+--	- width, height
+--	- orientation
+--	- value (contextualizable)
+-- Triggers
+--	- init
+
+nofs.register_widget("scrollbar", {
+	-- This is a bit complex. Default scrollbar management have big issues.
+	-- Main one is that if form is refreshed while dragging the scrollbar cursor
+	-- then mouse looses the cursor. Have to temporize before actually refresh the
+	-- form
+	handle_field_event = function(item, player_name, field)
+		local event = minetest.explode_scrollbar_event(field)
+		local context = item:get_context()
+		if event.type == 'CHG' then
+			event.increase = event.value > (context.value or 0)
+			event.decrease = event.value < (context.value or 0)
+			context.value = event.value
+			if item.def.connected_to then
+				local connected =
+					item.form:get_element_by_id(item.def.connected_to)
+				if connected.def.max_items then
+					local max_index = #connected - connected.def.max_items + 1
+					local start_index = 1
+					if max_index > 1 then
+						start_index = scrollbar_get_index(event.value, 1, max_index)
+						-- If index unchanged, force to go to next index
+						-- according to direction
+						if start_index == (connected:get_context().start_index or 1)
+						then
+							if event.increase and start_index < max_index then
+								start_index = start_index + 1
+							end
+							if event.decrease and start_index > 1 then
+								start_index = start_index - 1
+							end
+						end
+					end
+					connected:get_context().start_index = start_index
+					print(start_index)
+					context.value = scrollbar_get_value(start_index, 1, max_index)
+					context.update = (context.update or 0) + 1
+					minetest.after(0.1, function()
+						context.update = context.update - 1
+						if context.update == 0 then
+							nofs.refresh_form(player_name)
+						end
+					end)
+				end
+			end
+		end
+	end,
+	render = function(item, offset)
+		item:have_an_id()
+		return string.format("scrollbar[%s;%s;%s;%s]",
+			fspossize(item, offset), item.def.orientation or "vertical",
+			item.id, fsesc(item:get_attribute("value") or 0))
+	end,
+})
+
+-- label
+-- =====
+-- Attributes:
+--	- width, height
+--	- label (contextualizable)
+--	- direction
+-- Triggers:
+--	- init
+
 nofs.register_widget("label", {
 	offset = { x = 0, y = 0.2 },
-	render = function(element, offset)
-		if element.direction and element.direction == 'vertical' then
-			return string.format("vertlabel[%s;%s]",
-				fspos(element, offset), (element.label or ""))
-		else
-			return string.format("label[%s;%s]",
-				fspos(element, offset), (element.label or ""))
-		end
-	end,
+	render = function(item, offset)
+			local alabel = fsesc(item:get_attribute('label'))
+			if item.def.direction and item.def.direction == 'vertical' then
+				return string.format("vertlabel[%s;%s]", fspos(item, offset), alabel)
+			else
+				-- Use of textarea is much better than label as text is actually
+				-- limited to the giver area and label can be multiline
+				return string.format("textarea[%s;;%s;]",
+					fspossize(item, offset, alabel), alabel)
+			end
+		end,
 })
+
+-- button
+-- ======
+-- Attributes:
+--	- width, height
+--	- label (contextualizable)
+--	- image (contextualizable)
+--	- item (contextualizable)
+--	- exit
+-- Triggers:
+--	- init
+--	- on_clicked
 
 nofs.register_widget("button", {
-	needs_id = true,
-	render = function(element, offset)
-		-- Some warnings
-		if element.item ~= nil then
-			if element.image ~= nil then
+	init = function(item)
+			item:have_an_id()
+			if item:get_attribute('item') and item:get_attribute('image') then
 				minetest.log('warning',
 					'Button can\'t have "image" and "item" attributes at once. '..
-					'Ignoring "item" attribute.')
+					'Ignoring "image" attribute.')
 			end
-			if element.exit == 'true' then
-				minetest.log('warning',
-					'Button can\'t have exit=true and item attributes at once. '..
-					'Ignoring exit=true attribute.')
-			end
-		end
+		end,
+	handle_field_event = function(item, player_name, field)
+			item:trigger('on_clicked')
+		end,
+	render = function(item, offset)
+			local aitem = item:get_attribute('item')
+			local aimage = item:get_attribute('image')
+			local alabel = item:get_attribute('label')
 
-		-- Now, render !
-		if element.image then
-			if element.exit == "true" then
-				return string.format("image_button_exit[%s;%s;%s;%s]",
-					fspossize(element, offset), element.image, element.id,
-					element.label or "")
+			if aitem then
+				return string.format("item_image_button[%s;%s;%s;%s]",
+					fspossize(item, offset), fsesc(aitem), item.id, fsesc(alabel))
 			else
-				return string.format("image_button[%s;%s;%s;%s]",
-					fspossize(element, offset), element.image, element.id,
-					element.label or "")
+				-- Using image buttons because normal buttons does not size vertically
+				if item.def.exit == "true" then
+					return string.format("image_button_exit[%s;%s;%s;%s]",
+						fspossize(item, offset), fsesc(aimage), item.id, fsesc(alabel))
+				else
+					return string.format("image_button[%s;%s;%s;%s]",
+						fspossize(item, offset), fsesc(aimage), item.id, fsesc(alabel))
+				end
 			end
-		elseif element.item then
-			return string.format("item_image_button[%s;%s;%s;%s]",
-				fspossize(element, offset), element.item, element.id,
-				element.label or "")
-		else -- Using image buttons because normal buttons does not size vertically
-			if element.exit == "true" then
-				return string.format("image_button_exit[%s;;%s;%s]",
-					fspossize(element, offset), element.id, element.label or "")
-			else
-				return string.format("image_button[%s;;%s;%s]",
-					fspossize(element, offset), element.id, element.label or "")
-			end
-		end
-	end,
+		end,
 })
+
+
+-- Field
+-- =====
+-- Attributes:
+--	- width, height
+--	- label (contextualizable)
+--	- value (contextualizable)
+--	- hidden
+--	- meta
+-- Triggers:
+--	- init
+--	- on_changed
 
 nofs.register_widget("field", {
 	holds_value = true,
 	offset = { x = 0.3, y = 0.32 },
-	render = function(element, offset)
+	init = function(item)
+		item:have_an_id()
+		local context = item:get_context()
+		if item.def.meta then
+			context.value = context.value or item.form:get_meta(item.def.meta)
+		end
+	end,
+	handle_field_event = function(item, player_name, field)
+		local context = item:get_context()
+		local oldvalue = context.value or ''
+		context.value = field
+		if context.value ~= oldvalue then
+			item:trigger('on_changed', oldvalue)
+		end
+	end,
+	render = function(item, offset)
+		local context = item:get_context()
+		local avalue = item:get_attribute('value')
+		local alabel = item:get_attribute('label')
 		-- Render
-		if element.hidden == 'true' then
-			return string.format("pwdfield[%s;%s;%s]", fspossize(element, offset),
-				element.id, (element.label or ""))
+		if item.def.hidden == 'true' then
+			return string.format("pwdfield[%s;%s;%s]",
+				fspossize(item, offset), item.id, fsesc(avalue))
 		else
-			return string.format("field[%s;%s;%s;%s]", fspossize(element, offset),
-				element.id, (element.label or ""), (element.value or ""))
+			return string.format("field[%s;%s;%s;%s]",
+				fspossize(item, offset), item.id, fsesc(alabel), fsesc(avalue))
+		end
+	end,
+	save = function(item)
+		-- Save to meta
+		if item.def.meta then
+			item.form:set_meta(item.def.meta, item:get_context().value)
 		end
 	end,
 })
 
+-- Checkbox
+-- ========
+-- Attributes:
+--  - width, height
+--	- label
+-- Triggers:
+--  - on_clicked(item)
+--  - on_changed(item, oldvalue)
+-- Context:
+--  value: value of the checkbox
+
 nofs.register_widget("checkbox", {
-	holds_value = true,
-	render = function(element, offset)
-		return string.format("checkbox[%s;%s;%s;%s]",
-			fspos(element, offset), element.id, (element.label or ""),
-			element.value == "true" and "true" or "fasle")
-	end,
+	init = function(item)
+			item:have_an_id()
+			local context = item:get_contect()
+			if item.def.meta then
+				context.value = context.value or item.form:get_meta(item.def.meta)
+			end
+		end,
+	handle_field_event = function(item, player_name, field)
+			local context = item:get_context()
+			local oldvalue = item.value
+			context.value = field
+			if context.value ~= oldvalue then
+				item:trigger('on_changed', oldvalue)
+			end
+			item:trigger('on_clicked')
+		end,
+	render = function(item, offset)
+			item:have_an_id()
+			local alabel = item:get_attribute('label')
+			local avalue = item:get_attribute('value')
+			return string.format("checkbox[%s;%s;%s;%s]",
+				fspos(item, offset), item.id, fsasc(alabel),
+				avalue == "true" and "true" or "false")
+		end,
 })
 
+-- WIP
 nofs.register_widget("inventory", {
-	render = function(element, offset)
+	render = function(item, offset)
+		item:have_an_id()
 		return string.format("list[%s;%s;%s;]%s",
-			element.inventory or "current_player",
-			element.list or "main",
-			fspossize(element, offset),
-			element.listring and "listring[]" or "")
+			item.def.inventory or "current_player",
+			item.def.list or "main",
+			fspossize(item, offset),
+			item.def.listring and "listring[]" or "")
 		end,
 })
