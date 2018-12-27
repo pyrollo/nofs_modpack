@@ -39,8 +39,7 @@ function Item:new(parent, def)
 		form = nofs.is_form(parent) and parent or parent.form,
 		def = def,
 		widget = widget,
-		pos = { x = 0, y = 0 },
-		size = { x = 0, y = 0 },
+		geometry = { x = 0, y = 0, w = 0, h = 0 },
 	}
 	setmetatable(item, self)
 
@@ -98,17 +97,11 @@ function Item:get_attribute(name)
 	return self.def[name]
 end
 
-function Item:resize()
+function Item:size()
+	self.geometry.w = self.def.width or self.widget.width
+	self.geometry.h = self.def.height or self.widget.height
 	if self.widget.size and type(self.widget.size) == 'function' then
 		self.widget.size(self)
-	elseif self.widget.size and type(self.widget.size) == 'table' then
-		-- Default size -- TODO: Will this be really used ?
-		self.size = {
-			x = self.def.width or self.widget.size.x,
-			y = self.def.height or self.widget.size.y,
-		}
-	else
-		self.size = { x = self.def.width, y = self.def.height }
 	end
 end
 

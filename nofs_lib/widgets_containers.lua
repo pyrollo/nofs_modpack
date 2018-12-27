@@ -18,6 +18,26 @@
 	along with signs.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
+local function align_position(item_geo, box_geo, halign, valign)
+	if valign == 'top' then
+		item_geo.y = box_geo.y
+	elseif valign == 'bottom' then
+		item_geo.y = box_geo.y + box_geo.h - item_geo.h
+	else
+		item_geo.y = box_geo.y + box_geo.h / 2 - item_geo.h / 2
+	end
+
+	if halign == 'left' then
+		item_geo.x = box_geo.x
+	elseif halign == 'right' then
+		item_geo.x = box_geo.x + box_geo.w - item_geo.w
+	else
+		item_geo.x = box_geo.x + box_geo.w / 2 - item_geo.w / 2
+	end
+
+
+end
+
 local function align_position(container_size, item_size, offset, halign, valign)
 	local x, y
 	if valign == 'top' then
@@ -42,53 +62,50 @@ end
 
 local container_scrollbar_width = 0.5
 
--- Manque context:index
 -- Sizing vbox and hbox and places child items inside
 local function size_box(item)
-	local main, other
-	local pos = 0 -- TODO:MARGIN
-	local size = 0
-
+	local pos1, pos2, size1, size2
 	-- Process vbox and hbox the same way, just inverting coordinates
 	if item.widget.orientation == 'horizontal' then
-		main = 'x' other = 'y'
+		pos1, pos2, size1, size2 = 'x', 'y', 'w', 'h'
 	else
-		main = 'y' other = 'x'
+		pos1, pos2, size1, size2 = 'y', 'x', 'h', 'w'
 	end
 
-	-- Max other size
+	local dim1, dim2 = 0, 0 -- TODO:MARGIN
+
+	-- dim2 = max child size
 	for _, child in ipairs(item) do
-		if child.size[other] > size then
-			size = child.size[other]
+		if child.geometry[size2] > dim2 then
+			dim2 = child.geometry[size2]
 		end
 	end
 
 	local start_index = item:get_context().start_index or 1
 
-	-- Positionning
+	-- Positionning and dim1 (=sum child sizes)
 	for index, child in ipairs(item) do
 		if not item.def.max_items or
 			index >= start_index and index < start_index + item.def.max_items
 		then
-			child.pos = align_position(
-				{ [main] = child.size[main], [other] = size },
-				child.size, { [main] = pos, [other] = 0 },
+			align_position(
+				child.geometry,
+				{ [pos1] = dim1, [pos2] = 0,
+					[size1] = child.geometry[size1], [size2] = dim2 },
 				item.def.halign or "center", item.def.valign or "middle")
 
-			pos = pos + child.size[main] -- TODO:Spacing
-
-		-- TODO: This is center, add left & right
-			child.pos[other] =
-				( size - child.size[other] ) / 2
+			dim1 = dim1 + child.geometry[size1] -- TODO:Spacing
 		end
 	end
 
   -- Improvements needed for overflow managing (type, positionning, visibility)
 	if item.def.overflow and item.def.overflow == 'scrollbar' then
-		size = size + container_scrollbar_width
+		dim2 = dim2 + container_scrollbar_width
 	end
 
-	item.size = { [main] = pos, [other] = size }
+	-- Finally set box size according to previous findings
+	item.geometry[size1] = dim1
+	item.geometry[size2] = dim2
 end
 
 -- Containers generic rendering
@@ -96,8 +113,8 @@ end
 local function render_container(item, offset)
 
 	local inneroffset = {
-		x = offset.x + item.pos.x,
-		y = offset.y + item.pos.y
+		x = offset.x + item.geometry.x,
+		y = offset.y + item.geometry.y
 	}
 
 	local start_index = item:get_context().start_index or 1
@@ -127,11 +144,13 @@ local function render_container(item, offset)
 			}, {}) -- TODO :DATA?? -- To be linked to item? Context?
 
 		if item.def.orientation == 'horizontal' then
-			scrollbar.pos = { x = 0, y = item.size.y - container_scrollbar_width }
-			scrollbar.size = { x = item.size.x, y = container_scrollbar_width }
+			scrollbar.geometry = {
+				x = 0, y = item.size.y - container_scrollbar_width,
+				w = item.size.x, h = container_scrollbar_width }
 		else
-			scrollbar.pos = { x = item.size.x - container_scrollbar_width, y = 0 }
-			scrollbar.size = { x = container_scrollbar_width, y = item.size.y, }
+			scrollbar.geometry = {
+				x = item.size.x - container_scrollbar_width, y = 0,
+				w = container_scrollbar_width, h = item.size.y }
 		end
 		fs = fs..scrollbar:render(inneroffset)
 	end
@@ -146,8 +165,8 @@ nofs.register_widget("form", {
 	orientation = 'vertical',
 	size = size_box,
 	render = function(item, offset)
-		return string.format("size[%g,%g]%s", item.size.x, item.size.y,
-			render_container(item, offset or { x=0, y=0 }))
+		return nofs.fs_element_string('size', item.geometry)
+			..render_container(item, offset or { x=0, y=0 }))
 	end,
 })
 
@@ -163,6 +182,7 @@ nofs.register_widget("hbox", {
 	render = render_container,
 })
 
+--[[
 -- Tables : two types:
 -- grids
 -- tables with fixed columns and rows, for variable listings. items stored in list.
@@ -220,3 +240,4 @@ nofs.register_widget("grid", {
 })
 
 nofs.register_widget("gridrow", { render = render_container } )
+]]

@@ -22,33 +22,6 @@ local function fsesc(text)
 	return minetest.formspec_escape(text or '')
 end
 
--- Standard offset position and size
-local function fspos(item, offset)
-	local widgetoffset = item.widget.offset
-	if widgetoffset then
-		return string.format("%g,%g",
-			item.pos.x + offset.x + widgetoffset.x,
-			item.pos.y + offset.y + widgetoffset.y)
-	else
-		return string.format("%g,%g",
-			item.pos.x + offset.x, item.pos.y + offset.y)
-	end
-end
-
-local function fspossize(item, offset)
-	local widgetoffset = item.widget.offset
-	if widgetoffset then
-		return string.format("%g,%g;%g,%g",
-			item.pos.x + offset.x + widgetoffset.x,
-			item.pos.y + offset.y + widgetoffset.y,
-			item.size.x, item.size.y)
-	else
-		return string.format("%g,%g;%g,%g",
-			item.pos.x + offset.x, item.pos.y + offset.y,
-			item.size.x, item.size.y)
-	end
-end
-
 -- BASIC WIDGETS
 ----------------
 
@@ -116,8 +89,9 @@ nofs.register_widget("scrollbar", {
 	end,
 	render = function(item, offset)
 		item:have_an_id()
-		return string.format("scrollbar[%s;%s;%s;%s]",
-			fspossize(item, offset), item.def.orientation or "vertical",
+		return nofs.fs_element_string('scrollbar',
+			nofs.add_offset(item.geometry, offset),
+			item.def.orientation or "vertical",
 			item.id, fsesc(item:get_attribute("value") or 0))
 	end,
 })
@@ -127,22 +101,16 @@ nofs.register_widget("scrollbar", {
 -- Attributes:
 --	- width, height
 --	- label (contextualizable)
---	- direction
 -- Triggers:
 --	- init
 
 nofs.register_widget("label", {
-	offset = { x = 0, y = 0.2 },
 	render = function(item, offset)
-			local alabel = fsesc(item:get_attribute('label'))
-			if item.def.direction and item.def.direction == 'vertical' then
-				return string.format("vertlabel[%s;%s]", fspos(item, offset), alabel)
-			else
-				-- Use of textarea is much better than label as text is actually
-				-- limited to the giver area and label can be multiline
-				return string.format("textarea[%s;;%s;]",
-					fspossize(item, offset, alabel), alabel)
-			end
+			-- Use of textarea is much better than label as text is actually
+			-- limited to the giver area and label can be multiline
+			return nofs.fs_element_string('textarea',
+				nofs.add_offset(item.geometry, offset),
+				'', fsesc(item:get_attribute('label')), '')
 		end,
 })
 
@@ -173,19 +141,21 @@ nofs.register_widget("button", {
 	render = function(item, offset)
 			local aitem = item:get_attribute('item')
 			local aimage = item:get_attribute('image')
-			local alabel = item:get_attribute('label')
 
 			if aitem then
-				return string.format("item_image_button[%s;%s;%s;%s]",
-					fspossize(item, offset), fsesc(aitem), item.id, fsesc(alabel))
+				return nofs.fs_element_string('item_image_button',
+					nofs.add_offset(item.geometry, offset), fsesc(aitem), item.id,
+					fsesc(item:get_attribute('label')))
 			else
 				-- Using image buttons because normal buttons does not size vertically
 				if item.def.exit == "true" then
-					return string.format("image_button_exit[%s;%s;%s;%s]",
-						fspossize(item, offset), fsesc(aimage), item.id, fsesc(alabel))
+					return nofs.fs_element_string('image_button_exit',
+						nofs.add_offset(item.geometry, offset), fsesc(aimage), item.id,
+						fsesc(item:get_attribute('label')))
 				else
-					return string.format("image_button[%s;%s;%s;%s]",
-						fspossize(item, offset), fsesc(aimage), item.id, fsesc(alabel))
+					return nofs.fs_element_string('image_button',
+						nofs.add_offset(item.geometry, offset), fsesc(aimage), item.id,
+						fsesc(item:get_attribute('label')))
 				end
 			end
 		end,
@@ -204,9 +174,9 @@ nofs.register_widget("button", {
 --	- init
 --	- on_changed
 
+-- Field also uses text area because its sizing is much better
 nofs.register_widget("field", {
 	holds_value = true,
-	offset = { x = 0.3, y = 0.32 },
 	init = function(item)
 		item:have_an_id()
 		local context = item:get_context()
@@ -224,15 +194,16 @@ nofs.register_widget("field", {
 	end,
 	render = function(item, offset)
 		local context = item:get_context()
-		local avalue = item:get_attribute('value')
-		local alabel = item:get_attribute('label')
 		-- Render
 		if item.def.hidden == 'true' then
-			return string.format("pwdfield[%s;%s;%s]",
-				fspossize(item, offset), item.id, fsesc(avalue))
+			-- TODO: Manage password field??
+--			return string.format("pwdfield[%s;%s;%s]",
+--				fspossize(item, offset), item.id, fsesc(avalue))
 		else
-			return string.format("field[%s;%s;%s;%s]",
-				fspossize(item, offset), item.id, fsesc(alabel), fsesc(avalue))
+			return nofs.fs_element_string('textarea',
+				nofs.add_offset(item.geometry, offset),  item.id,
+				fsesc(item:get_attribute('label')),
+				fsesc(item:get_attribute('value')))
 		end
 	end,
 	save = function(item)
@@ -282,6 +253,7 @@ nofs.register_widget("checkbox", {
 })
 
 -- WIP
+--[[
 nofs.register_widget("inventory", {
 	render = function(item, offset)
 		item:have_an_id()
@@ -292,3 +264,4 @@ nofs.register_widget("inventory", {
 			item.def.listring and "listring[]" or "")
 		end,
 })
+]]
