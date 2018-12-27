@@ -236,18 +236,16 @@ function Form:build_items()
 end
 
 function Form:render()
-	local function size_items(item)
+	local function recursive_size(item)
 		-- first, size children (if any)
 		for _, child in ipairs(item) do
-			size_items(child)
+			recursive_size(child)
 		end
-		item:resize()
+		item:size()
 	end
 
 	self:build_items()
-
-	size_items(self.item)
-
+	recursive_size(self.item)
 	return self.item:render({ x = 0, y = 0 })
 end
 

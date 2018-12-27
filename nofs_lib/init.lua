@@ -24,6 +24,7 @@ nofs.path = minetest.get_modpath(nofs.name)
 
 dofile(nofs.path..'/common.lua')
 dofile(nofs.path..'/stack.lua')
+dofile(nofs.path..'/formspec.lua')
 dofile(nofs.path..'/widgets_registry.lua')
 dofile(nofs.path..'/widgets_containers.lua')
 dofile(nofs.path..'/widgets_basic.lua')
