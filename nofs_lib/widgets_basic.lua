@@ -74,7 +74,6 @@ nofs.register_widget("scrollbar", {
 						end
 					end
 					connected:get_context().start_index = start_index
-					print(start_index)
 					context.value = scrollbar_get_value(start_index, 1, max_index)
 					context.update = (context.update or 0) + 1
 					minetest.after(0.1, function()
@@ -175,6 +174,7 @@ nofs.register_widget("button", {
 --	- on_changed
 
 -- Field also uses text area because its sizing is much better
+-- --> But text is not centered !
 nofs.register_widget("field", {
 	holds_value = true,
 	init = function(item)
@@ -200,10 +200,16 @@ nofs.register_widget("field", {
 --			return string.format("pwdfield[%s;%s;%s]",
 --				fspossize(item, offset), item.id, fsesc(avalue))
 		else
-			return nofs.fs_element_string('textarea',
+			return nofs.fs_element_string('field',
 				nofs.add_offset(item.geometry, offset),  item.id,
 				fsesc(item:get_attribute('label')),
 				fsesc(item:get_attribute('value')))
+
+--[[			return nofs.fs_element_string('textarea',
+				nofs.add_offset(item.geometry, offset),  item.id,
+				fsesc(item:get_attribute('label')),
+				fsesc(item:get_attribute('value')))
+			]]
 		end
 	end,
 	save = function(item)

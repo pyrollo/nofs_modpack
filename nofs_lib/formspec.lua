@@ -30,6 +30,8 @@ local btn_height = base_size.y * 15/13*0.35
 -- AbsoluteRect.UpperLeftCorner seems to be 0,0. So it is ommited in computation
 -- (image element)
 
+nofs.fs_field_height = btn_height * 2
+
 -- Geometry computation uses the inverse function of the one used in
 -- guiFormSpecMenu.cpp, divided by spacing. Aim is to have a consistent
 -- coordinate system.
@@ -75,7 +77,7 @@ local fsgeometry = {
 				geometry.w,
 				geometry.h)
 		end,
-	checkbox = function(geometry)
+	checkbox = function(geometry) --???
 			return string.format("%g,%g;%g,%g",
 				geometry.x - padding.x/spacing.x,
 				geometry.y - padding.y/spacing.y,
@@ -89,6 +91,25 @@ local fsgeometry = {
 				geometry.w,
 				geometry.h)
 		end,
+	field = function(geometry)
+			return string.format("%g,%g;%g,0",
+				geometry.x,
+				geometry.y + btn_height*spacing.y,
+				geometry.w + 1 - imgsize.x/spacing.x)
+		end,
+	pwdfield = function(geometry) -- Same as field
+			return string.format("%g,%g;%g,0",
+				geometry.x,
+				geometry.y + btn_height*spacing.y,
+				geometry.w + 1 - imgsize.x/spacing.x)
+		end,
+	button = function(geometry) -- Same as field
+			return string.format("%g,%g;%g,0",
+				geometry.x,
+				geometry.y + btn_height*spacing.y,
+				geometry.w + 1 - imgsize.x/spacing.x)
+		end,
+
 }
 
 local fsspecific = {

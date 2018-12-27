@@ -41,6 +41,8 @@ local container_scrollbar_width = 0.5
 -- Sizing vbox and hbox and places child items inside
 local function size_box(item)
 	local pos1, pos2, size1, size2
+	local spacing = item:get_def_inherit('spacing') or 0
+
 	-- Process vbox and hbox the same way, just inverting coordinates
 	if item.widget.orientation == 'horizontal' then
 		pos1, pos2, size1, size2 = 'x', 'y', 'w', 'h'
@@ -48,7 +50,7 @@ local function size_box(item)
 		pos1, pos2, size1, size2 = 'y', 'x', 'h', 'w'
 	end
 
-	local dim1, dim2 = 0, 0 -- TODO:MARGIN
+	local dim1, dim2 = 0, 0
 
 	-- dim2 = max child size
 	for _, child in ipairs(item) do
@@ -70,13 +72,14 @@ local function size_box(item)
 					[size1] = child.geometry[size1], [size2] = dim2 },
 				item.def.halign or "center", item.def.valign or "middle")
 
-			dim1 = dim1 + child.geometry[size1] -- TODO:Spacing
+			dim1 = dim1 + child.geometry[size1] + spacing
 		end
 	end
+	dim1 = dim1 - spacing
 
   -- Improvements needed for overflow managing (type, positionning, visibility)
 	if item.def.overflow and item.def.overflow == 'scrollbar' then
-		dim2 = dim2 + container_scrollbar_width
+		dim2 = dim2 + spacing + container_scrollbar_width
 	end
 
 	-- Finally set box size according to previous findings
@@ -139,11 +142,20 @@ end
 
 nofs.register_widget("form", {
 	orientation = 'vertical',
-	size = size_box,
+	size = function(item)
+			local margin = item:get_def_inherit('margin') or 0
+			size_box(item)
+			item.geometry = {
+				x = item.geometry.x + margin,
+				y = item.geometry.y + margin,
+				h = item.geometry.h + margin*2;
+				w = item.geometry.w + margin*2;
+			}
+		end,
 	render = function(item, offset)
-		return nofs.fs_element_string('size', item.geometry)
-			..render_container(item, offset or { x=0, y=0 })
-	end,
+			return nofs.fs_element_string('size', item.geometry)
+				..render_container(item, offset or { x=0, y=0 })
+		end,
 })
 
 nofs.register_widget("vbox", {
