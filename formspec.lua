@@ -76,7 +76,11 @@ local fsgeometry = {
 				geometry.h)
 		end,
 	checkbox = function(geometry)
-			-- TODO
+			return string.format("%g,%g;%g,%g",
+				geometry.x - padding.x/spacing.x,
+				geometry.y - padding.y/spacing.y,
+				geometry.w,
+				geometry.h)
 		end,
 	scrollbar = function(geometry) -- Same as box
 			return string.format("%g,%g;%g,%g",
