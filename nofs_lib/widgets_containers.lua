@@ -34,31 +34,7 @@ local function align_position(item_geo, box_geo, halign, valign)
 	else
 		item_geo.x = box_geo.x + box_geo.w / 2 - item_geo.w / 2
 	end
-
-
 end
-
-local function align_position(container_size, item_size, offset, halign, valign)
-	local x, y
-	if valign == 'top' then
-		y = offset.y
-	elseif valign == 'bottom' then
-		y = offset.y + container_size.y - item_size.y
-	else
-		y = offset.y + container_size.y / 2 - item_size.y / 2
-	end
-
-	if halign == 'left' then
-		x = offset.x
-	elseif halign == 'right' then
-		x = offset.x + container_size.x - item_size.x
-	else
-		x = offset.x + container_size.x / 2 - item_size.x / 2
-	end
-
-	return { x=x, y=y }
-end
-
 
 local container_scrollbar_width = 0.5
 
@@ -145,12 +121,12 @@ local function render_container(item, offset)
 
 		if item.def.orientation == 'horizontal' then
 			scrollbar.geometry = {
-				x = 0, y = item.size.y - container_scrollbar_width,
-				w = item.size.x, h = container_scrollbar_width }
+				x = 0, y = item.geometry.h - container_scrollbar_width,
+				w = item.geometry.w, h = container_scrollbar_width }
 		else
 			scrollbar.geometry = {
-				x = item.size.x - container_scrollbar_width, y = 0,
-				w = container_scrollbar_width, h = item.size.y }
+				x = item.geometry.w - container_scrollbar_width, y = 0,
+				w = container_scrollbar_width, h = item.geometry.h }
 		end
 		fs = fs..scrollbar:render(inneroffset)
 	end
@@ -166,7 +142,7 @@ nofs.register_widget("form", {
 	size = size_box,
 	render = function(item, offset)
 		return nofs.fs_element_string('size', item.geometry)
-			..render_container(item, offset or { x=0, y=0 }))
+			..render_container(item, offset or { x=0, y=0 })
 	end,
 })
 

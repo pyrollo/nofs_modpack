@@ -25,7 +25,7 @@ local base_size = { x = 4/5, y = 13/15 }
 local imgsize = { x = base_size.x, y = base_size.y }
 local spacing = { x = base_size.x*5/4, y = base_size.y*15/13 }
 local padding = { x = base_size.x*3/8, y = base_size.y*3/8 }
-local btn_height = { base_size.y * 15/13*0.35 }
+local btn_height = base_size.y * 15/13*0.35
 
 -- AbsoluteRect.UpperLeftCorner seems to be 0,0. So it is ommited in computation
 -- (image element)
@@ -38,7 +38,7 @@ local fsgeometry = {
 	size = function(geometry)
 			return string.format("%g,%g",
 				(geometry.w - imgsize.x - padding.x*2 ) / spacing.x + 1,
-				(geometry.h - imgsize.y - padding.y*2 - btn_height*2/3) / spacing.y - 1)
+				(geometry.h - imgsize.y - padding.y*2 - btn_height*2/3) / spacing.y + 1)
 		end,
 	image = function(geometry)
 			return string.format("%g,%g;%g,%g",
@@ -46,8 +46,8 @@ local fsgeometry = {
 				geometry.y - padding.y/spacing.y,
 				geometry.w * spacing.x / imgsize.x,
 				geometry.h * spacing.y / imgsize.y)
-		end
-	text_area = function(geometry)
+		end,
+	textarea = function(geometry)
 			return string.format("%g,%g;%g,%g",
 				geometry.x, -- It seems that for text_area, padding has been forgotten
 				geometry.y - btn_height/spacing.y,
@@ -100,12 +100,7 @@ local fsspecific = {
 		end,
 }
 
-local function geometry(type, geometry)
-	assert (fsgeometry[type], string.format('Unknown element type "%s".', type))
-	return fsgeometry[type](geometry)
-end
-
-local function nofs.add_offset(geometry, offset)
+function nofs.add_offset(geometry, offset)
 	return {
 		x = geometry.x + offset.x,
 		y = geometry.y + offset.y,
@@ -118,6 +113,8 @@ function nofs.fs_element_string(type, geometry, ...)
 	if fsspecific[type] then
 		return string.format("%s[%s]", type, fsspecific[type](geometry, ...))
 	else
-		return string.format("%s[%s]", type, table.concat({...}, ";"))
+		assert (fsgeometry[type], string.format('Unknown element type "%s".', type))
+		return string.format("%s[%s;%s]", type, fsgeometry[type](geometry),
+			table.concat({...}, ";"))
 	end
-)
+end

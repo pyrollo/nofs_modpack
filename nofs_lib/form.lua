@@ -245,9 +245,7 @@ function Form:render()
 	end
 
 	self:build_items()
-
 	recursive_size(self.item)
-
 	return self.item:render({ x = 0, y = 0 })
 end
 
