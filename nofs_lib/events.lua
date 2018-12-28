@@ -29,35 +29,21 @@ minetest.register_on_player_receive_fields(
 		end
 		local player_name = player:get_player_name()
 
-		local form = nofs.get_stack_top(player_name)
+		local form = nofs.get_form_stack(player_name):top()
 		if form == nil then
 			return false -- Not managed by NoFS
 		end
-		if form.id ~= formname then
+		if form.name ~= formname then
 			-- Wrong form, remove stack, close all (should not happen)
 			minetest.log('warning',
 				string.format('[nofs] Received fields for form "%s" but expected fields for "%s". Ignoring.',
-					formname, form.id))
+					formname, form.name))
 				minetest.log('warning',
 					string.format('[nofs] Suspicious formspec data recieved from player "%s".', player_name))
-			nofs.clear_stack(player_name)
-			minetest.close_formspec(player)
+			nofs.get_form_stack(player_name):empty()
 			return false
 		end
 
 		form:receive(fields)
-		-- Form events
-		-- close event
-		-- If form exit, unstack
-		if fields.quit == "true" then
-			-- Trigger on_close event
---			nofs.trigger_event(player, form, fields, form, 'close')
-			nofs.stack_remove(player_name)
-		end
-
-		if form.updated then
-			form.updated = nil
-			nofs.refresh_form(player_name)
-		end
 	end
 )
