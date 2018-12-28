@@ -119,7 +119,7 @@ local inspector_form = {
 				end,
 			},
 			{ type = 'button', width = 1, height = 1, label="...",
-				on_clicked = function()
+				on_clicked = function(item)
 					local context = item.parent:get_context()
 				end,
 			},
@@ -141,7 +141,7 @@ minetest.register_tool("nofs_demo:node_inspector", {
     on_use = function(itemstack, user, pointed_thing)
         if pointed_thing.type=="node" then
 					nofs.show_form(user:get_player_name(), inspector_form,
-						{ pos = pointed_thing_under })
+						{ pos = pointed_thing.under })
 	      elseif pointed_thing.type=="object" then
           print('Not implemented yet')
         end

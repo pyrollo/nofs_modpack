@@ -26,7 +26,7 @@ local Stack = {}
 Stack.__index = Stack
 
 function Stack:new()
-	stack = {}
+	local stack = {}
 	setmetatable(stack, self)
 	return stack
 end
@@ -49,14 +49,14 @@ function Stack:pop()
 	end
 end
 
-function Stack:clear()
+function Stack:empty()
 	local count = #self
 	for index=0, count do
 		self[index] = nil
 	end
 end
 
-function stack:remove(item)
+function Stack:remove(item)
 	local count = #self
 	local new = 1
 	for index = 1, count do

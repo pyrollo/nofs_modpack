@@ -70,7 +70,7 @@ function Form:new(player_name, def, context)
 	form.def.type = "form"
 
 	if context then
-		form_context = table.copy(context)
+		form.form_context = table.copy(context)
 	end
 
 	setmetatable(form, self)
@@ -293,8 +293,10 @@ function Form:receive(fields)
 end
 
 function Form:show()
+	-- Kind of random name -- Increases security ?
+	self.name = self.name or string.format('nofs:'..minetest.get_us_time())
 	nofs.get_form_stack(self.player_name):push(self)
-	minetest.show_formspec(self.player_name, self.id, self:render())
+	minetest.show_formspec(self.player_name, self.name, self:render())
 end
 
 function Form:refresh()
@@ -302,7 +304,7 @@ function Form:refresh()
 	if self ~= form then
 		minetest.log("warning", sting.format(
 			'[nofs] Form:refresh called while form not on top for player "%s".',
-			self.player_name)
+			self.player_name))
 	else
 		minetest.show_formspec(self.player_name, self.id, self:render())
 	end
@@ -313,7 +315,7 @@ function Form:close()
 	if self ~= stack:top() then
 		minetest.log("warning", sting.format(
 			'[nofs] Form:close called while form not on top for player "%s".',
-			self.player_name)
+			self.player_name))
 		return
 	end
 
@@ -321,7 +323,7 @@ function Form:close()
 	if stack:top() then
 		stack:top():refresh()
 	else
-		minetest.hide_formspec(self.player_name, '')
+		minetest.close_formspec(self.player_name, '')
 	end
 end
 
@@ -334,7 +336,7 @@ function nofs.is_form(form)
 end
 
 function nofs.show_form(player_name, def, context)
-	local form = Form:new(player_name, def, extra_context)
+	local form = Form:new(player_name, def, context)
 	nofs:get_form_stack(player_name).push(form)
 	form:show()
 end
