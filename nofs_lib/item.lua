@@ -87,6 +87,7 @@ function Item:get_context()
 	return self.form:get_context(self)
 end
 
+-- TODO:name ? get_contextual_attribute?
 function Item:get_attribute(name)
 	if self.id then
 		local context = self.form.item_contexts[self.id]
@@ -95,6 +96,17 @@ function Item:get_attribute(name)
 		end
 	end
 	return self.def[name]
+end
+
+-- TODO:name ?
+function Item:get_def_inherit(name)
+	if self.def[name] then
+		return self.def[name]
+	elseif self.widget.defaults and self.widget.defaults[name] then
+		return self.widget.defaults[name]
+	elseif self.parent then
+		return self.parent:get_def_inherit(name)
+	end
 end
 
 function Item:size()

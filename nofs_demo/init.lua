@@ -70,6 +70,8 @@ local data = {
 
 local inspector_form = {
 	id = 'test_form',
+	spacing = 0.1,
+	margin = 0.7,
 	{ type = 'vbox',
 		data = function(form)
 			local pos = form:get_context().pos
@@ -104,12 +106,12 @@ local inspector_form = {
 					end
 					return data
 				end,
-			{ type = 'label', width = 2, height = 1,
+			{ type = 'label', width = 2, height = nofs.fs_field_height,
 				init = function(item)
 					item:get_context().label = item.parent:get_context().data.key
 				end,
 			},
-			{ type = 'field', width = 4, height = 1,
+			{ type = 'field', width = 4, height = nofs.fs_field_height,
 				init = function(item)
 					item:get_context().value = item.parent:get_context().data.value
 				end,
@@ -118,7 +120,7 @@ local inspector_form = {
 					meta:set_string(item.parent:get_context().data.key, item:get_context().value)
 				end,
 			},
-			{ type = 'button', width = 1, height = 1, label="...",
+			{ type = 'button', width = 1, height = nofs.fs_field_height, label="...",
 				on_clicked = function(item)
 					local context = item.parent:get_context()
 				end,

@@ -222,9 +222,9 @@ function Form:build_items()
 				minetest.log("warning", '"data" attribute ignored for root element')
 			end
 			if parent then
-				item= nofs.new_item(parent, def)
+				item = nofs.new_item(parent, def)
 			else
-				item= nofs.new_item(self, def)
+				item = nofs.new_item(self, def)
 				self.item = item
 			end
 			for _, childdef in ipairs(def) do
