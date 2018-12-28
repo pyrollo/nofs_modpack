@@ -39,7 +39,7 @@ local main_form2 = {
 		{	id = 'field 1',	type = 'field',	height = 1,	width = 4,
 			label = 'Attribute "test"', meta="player:test",},
 		{	type = 'button', height = 1,	width = 1, label = 'Exit', exit = 'true',
-			on_clicked = nofs.close_form, },
+			on_clicked = function(item) item.form:close() end, },
 	},
 	{ type = "checkbox", width = 3, height =1, id = "chk1", label = "Select this",
 	on_clicked = function() print ('Checkbox pressed') end,},
@@ -140,9 +140,8 @@ minetest.register_tool("nofs_demo:node_inspector", {
     liquids_pointable = true,
     on_use = function(itemstack, user, pointed_thing)
         if pointed_thing.type=="node" then
-					local form = nofs.new_form(user:get_player_name(), inspector_form)  -- TODO:ADD extra context
-					form:get_context().pos = pointed_thing.under
-					nofs.show_form(user:get_player_name(), form) -- TODO: Player specified twice...
+					nofs.show_form(user:get_player_name(), inspector_form,
+						{ pos = pointed_thing_under })
 	      elseif pointed_thing.type=="object" then
           print('Not implemented yet')
         end

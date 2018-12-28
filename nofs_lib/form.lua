@@ -53,7 +53,7 @@ end
 local Form = {}
 Form.__index = Form
 
-function Form:new(player_name, def)
+function Form:new(player_name, def, context)
 	assert(type(def) == "table", "Form definition must be a table.")
 	assert(player_name, "Player name must be specified.")
 	check_types_and_ids(def)
@@ -68,6 +68,10 @@ function Form:new(player_name, def)
 		trigger_queues = { [1] = {}, [2] = {}, }
 	}
 	form.def.type = "form"
+
+	if context then
+		form_context = table.copy(context)
+	end
 
 	setmetatable(form, self)
 	return form
@@ -280,20 +284,59 @@ function Form:receive(fields)
 	end
 
 	self:run_triggers()
+
+	if fields.quit == "true" then
+		-- TODO: Trigger on_close event
+		self:close()
+	elseif self.updated then
+		self.updated = nil
+		self:refresh()
+	end
 end
+
+function Form:show()
+	nofs.get_form_stack(self.player_name):push(self)
+	minetest.show_formspec(self.player_name, self.id, self:render())
+end
+
+function Form:refresh()
+	local form = nofs.get_form_stack(self.player_name):top()
+	if self ~= form then
+		minetest.log("warning", sting.format(
+			'[nofs] Form:refresh called while form not on top for player "%s".',
+			self.player_name)
+	else
+		minetest.show_formspec(self.player_name, self.id, self:render())
+	end
+end
+
+function Form:close()
+	local stack = nofs.get_form_stack(self.player_name)
+	if self ~= stack:top() then
+		minetest.log("warning", sting.format(
+			'[nofs] Form:close called while form not on top for player "%s".',
+			self.player_name)
+		return
+	end
+
+	stack:pop()
+	if stack:top() then
+		stack:top():refresh()
+	else
+		minetest.hide_formspec(self.player_name, '')
+	end
+end
+
+-- API functions
+-- =============
 
 function nofs.is_form(form)
 	local meta = getmetatable(form)
 	return meta and meta == Form
 end
 
-function nofs.new_form(player_name, def, extra_context)
-	local form = Form:new(player_name, def)
-	if extra_context and type(extra_context) == 'table' then
-		local context = form:get_context()
-		for key, value in pairs(extra_context) do
-			context[key] = value
-		end
-	end
-	return form
+function nofs.show_form(player_name, def, context)
+	local form = Form:new(player_name, def, extra_context)
+	nofs:get_form_stack(player_name).push(form)
+	form:show()
 end
