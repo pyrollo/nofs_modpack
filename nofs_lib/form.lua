@@ -306,7 +306,13 @@ function Form:refresh()
 			'[nofs] Form:refresh called while form not on top for player "%s".',
 			self.player_name))
 	else
-		minetest.show_formspec(self.player_name, self.name, self:render())
+		print('REFrESHED '.. self.name)
+		local fs = self:render()
+		minetest.show_formspec(self.player_name, self.name, fs)
+		-- Redisplay the form 0.1 s after to ensure form is displayed (sometimes
+		-- displaying a form right after closing one does not work).
+		minetest.after(0.1, function(param) minetest.show_formspec(unpack(param)) end,
+			{ self.player_name, self.name, fs})
 	end
 end
 
@@ -321,6 +327,7 @@ function Form:close()
 
 	stack:pop()
 	if stack:top() then
+		-- Have to use 'after' to avoid the "double close escape" bug
 		stack:top():refresh()
 	else
 		minetest.close_formspec(self.player_name, '')
@@ -337,6 +344,5 @@ end
 
 function nofs.show_form(player_name, def, context)
 	local form = Form:new(player_name, def, context)
-	nofs:get_form_stack(player_name).push(form)
 	form:show()
 end

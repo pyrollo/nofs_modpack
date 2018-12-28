@@ -126,6 +126,8 @@ nofs.register_widget("label", {
 --	- on_clicked
 
 nofs.register_widget("button", {
+	height = nofs.fs_field_height,
+	width = 2,
 	init = function(item)
 			item:have_an_id()
 			if item:get_attribute('item') and item:get_attribute('image') then
@@ -147,7 +149,7 @@ nofs.register_widget("button", {
 					fsesc(item:get_attribute('label')))
 			else
 				-- Using image buttons because normal buttons does not size vertically
-				if item.def.exit == "true" then
+				if item.def.exit == true then
 					return nofs.fs_element_string('image_button_exit',
 						nofs.add_offset(item.geometry, offset), fsesc(aimage), item.id,
 						fsesc(item:get_attribute('label')))
@@ -176,7 +178,9 @@ nofs.register_widget("button", {
 -- Field also uses text area because its sizing is much better
 -- --> But text is not centered !
 nofs.register_widget("field", {
-	holds_value = true,
+	height = nofs.fs_field_height,
+	width = 2,
+--	holds_value = true,
 	init = function(item)
 		item:have_an_id()
 		local context = item:get_context()

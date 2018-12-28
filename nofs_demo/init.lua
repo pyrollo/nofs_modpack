@@ -46,28 +46,6 @@ local main_form2 = {
 	{ type = "inventory", width = 7, height = 5, inventory = "current_player", list="main", listring=true },
 }
 
-local data = {
-	player = "toto",
-	attribute = "xxx",
-	meta = {
-		{ name = "field1",	value = "xxx" },
-		{ name = "field2",	value = "YYY" },
-		{ name = "field3",	value = "zzz" },
-		{ name = "field4",	value = "aaa" },
-		{ name = "field5",	value = "bbb" },
-		{ name = "field6",	value = "xxx" },
-		{ name = "field7",	value = "YYY" },
-		{ name = "field8",	value = "zzz" },
-		{ name = "field9",	value = "aaa" },
-		{ name = "field10",	value = "bbb" },
-		{ name = "field11",	value = "xxx" },
-		{ name = "field12",	value = "YYY" },
-		{ name = "field13",	value = "zzz" },
-		{ name = "field14",	value = "aaa" },
-		{ name = "field15",	value = "bbb" },
-	},
-}
-
 local inspector_form = {
 	id = 'test_form',
 	spacing = 0.1,
@@ -122,16 +100,31 @@ local inspector_form = {
 			},
 			{ type = 'button', width = 1, height = nofs.fs_field_height, label="...",
 				on_clicked = function(item)
-					local context = item.parent:get_context()
+					local data = item.parent:get_context().data
+					nofs.show_form(item.form.player_name,
+						{ id = 'test_form',
+							spacing = 0.1,
+							margin = 0.7,
+							{ type = 'label', width = 5, height = 1,
+								init = function(item) item:get_context().label = item.form:get_context().title end },
+							{ type = 'field', width = 5, height = 5,
+								init = function(item) item:get_context().value = item.form:get_context().value end,
+								save = function(item) minetest.get_meta(item.form:get_context().pos, item.form:get_context().key, item.form:get_context().value) end,
+							},
+							{ type = 'hbox',
+								{ type = 'button', exit = true, label = 'Back' },
+								{ type = 'button', exit = true, label = 'Save', on_clicked = nofs.event.save },
+							},
+						},
+						{ title = data.key, key = data.key, value = data.value, pos = item.form:get_context().pos })
 				end,
 			},
 		},
 	},
 	{ type = 'hbox',
-		{ type = 'button', width = 2, height = 1, label="Cancel", exit = 'true', },
-		{	type = 'button', height = 1,	width = 2, label = 'Save', exit = 'true',
-			on_clicked = function(item) item.form:save() end
-		},
+		{ type = 'button', width = 2, height = 1, label= 'Cancel', exit = true, },
+		{	type = 'button', height = 1,	width = 2, label = 'Save', exit = true,
+			on_clicked = nofs.event.save },
 	},
 }
 
