@@ -46,18 +46,5 @@ minetest.register_on_player_receive_fields(
 		end
 
 		form:receive(fields)
-		-- Form events
-		-- close event
-		-- If form exit, unstack
-		if fields.quit == "true" then
-			-- Trigger on_close event
---			nofs.trigger_event(player, form, fields, form, 'close')
-			nofs.stack_remove(player_name)
-		end
-
-		if form.updated then
-			form.updated = nil
-			nofs.refresh_form(player_name)
-		end
 	end
 )

@@ -80,7 +80,7 @@ nofs.register_widget("scrollbar", {
 					minetest.after(0.1, function()
 						context.update = context.update - 1
 						if context.update == 0 then
-							nofs.refresh_form(player_name)
+							item.form:refresh()
 						end
 					end)
 				end

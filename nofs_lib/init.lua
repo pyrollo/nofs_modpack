@@ -31,6 +31,5 @@ dofile(nofs.path..'/widgets_basic.lua')
 dofile(nofs.path..'/form.lua')
 dofile(nofs.path..'/item.lua')
 dofile(nofs.path..'/events.lua')
-dofile(nofs.path..'/main.lua')
 
 --dofile(nofs.path..'/render.lua')
