@@ -170,6 +170,7 @@ nofs.register_widget("hbox", {
 	render = render_container,
 })
 
+
 --[[
 -- Tables : two types:
 -- grids

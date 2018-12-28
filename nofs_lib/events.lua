@@ -34,16 +34,25 @@ minetest.register_on_player_receive_fields(
 			return false -- Not managed by NoFS
 		end
 		if form.name ~= formname then
-			-- Wrong form, remove stack, close all (should not happen)
+			-- Wrong form, can happen if event from a previous form has not been recieved yet
 			minetest.log('warning',
 				string.format('[nofs] Received fields for form "%s" but expected fields for "%s". Ignoring.',
 					formname, form.name))
 				minetest.log('warning',
 					string.format('[nofs] Suspicious formspec data recieved from player "%s".', player_name))
-			nofs.get_form_stack(player_name):empty()
-			return false
+
+			-- Ignore event and redisplay top form
+			form:refresh()
+			return true
 		end
 
 		form:receive(fields)
 	end
 )
+
+-- Helpers
+-- =======
+nofs.event = {
+	save = function(item) item.form:save() end,
+	close = function(item) item.form:close() end,
+}
