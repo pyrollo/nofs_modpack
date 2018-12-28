@@ -306,7 +306,6 @@ function Form:refresh()
 			'[nofs] Form:refresh called while form not on top for player "%s".',
 			self.player_name))
 	else
-		print('REFrESHED '.. self.name)
 		local fs = self:render()
 		minetest.show_formspec(self.player_name, self.name, fs)
 		-- Redisplay the form 0.1 s after to ensure form is displayed (sometimes
