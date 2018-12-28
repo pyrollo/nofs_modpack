@@ -306,7 +306,7 @@ function Form:refresh()
 			'[nofs] Form:refresh called while form not on top for player "%s".',
 			self.player_name))
 	else
-		minetest.show_formspec(self.player_name, self.id, self:render())
+		minetest.show_formspec(self.player_name, self.name, self:render())
 	end
 end
 
