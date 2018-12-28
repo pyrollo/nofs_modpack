@@ -120,7 +120,12 @@ end
 function Item:render(offset)
 	self.form:register_id(self)
 	-- Even "render" is overrideable
-	return self:call('render', offset) or ''
+	local fs = self:call('render', offset) or ''
+	if self:get_attribute('visible') == false then
+		return ''
+	else
+		return fs
+	end
 end
 
 function Item:get_value()
