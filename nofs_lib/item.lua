@@ -42,29 +42,23 @@ function Item:new(parent, def)
 		form = parent.form
 	end
 
-	assert(not nofs.is_system_key(def.id or ""), string.format(
-		'Cannot use "%s" as id, it is a reserved word.', def.id))
-
 	if widget.parent_type and not widget.is_root then
 		assert(parent.def.type == widget.parent_type, string.format(
 			'"%s" element can not have a "%s" parent.', def.type, parent.def.type))
 	end
 
-	-- Exclusive child type. In that case, parent must have all its children of
-	-- the same type
-	if parent and parent.exclusive_child_type then
-		assert(parent.exclusive_child_type == def.type, string.format(
-			'Child type "%s" incompatible with exclusive child type "%s"',
-				def.type, parent.exclusive_child_type))
-	elseif parent and widget.exclusive_child_type then
-		parent.exclusive_child_type = def.type
-		for _, child in ipairs(parent) do
-			assert(child.def.type == parent.exclusive_child_type, string.format(
-				'Child type "%s" incompatible with exclusive child type "%s"',
-				child.def.type, parent.exclusive_child_type))
-		end
+	-- Id checks
+	if def.id then
+		assert(def.id ~= "quit", 'Cannot use "quit" as an item id, it is a reserved word.')
+		assert(def.id:sub(1,4) ~= "key_", string.format(
+			'"%s" is not a valid item id, item ids cannot start with "key_".',
+			def.id))
+		assert(def.id:match('^[A-Za-z0-9_:]+$'), string.format(
+			'"%s" is not a valid item id, item ids can contain only letters, number and "_".',
+			def.id))
 	end
 
+	-- Instanciation
 	local item = {
 		id = def.id,
 		registered_id = false,
