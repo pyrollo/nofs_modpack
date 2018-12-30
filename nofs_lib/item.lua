@@ -97,8 +97,8 @@ function Item:trigger(name, ...)
 	self.form:trigger(self, name, ...)
 end
 
-function Item:handle_field_event(player_name, field)
-	return self:call('handle_field_event', player_name, field)
+function Item:handle_field_event(player_name, field, subid)
+	return self:call('handle_field_event', player_name, field, subid)
 end
 
 function Item:have_an_id()
