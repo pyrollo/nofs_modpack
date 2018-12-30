@@ -50,6 +50,7 @@ local inspector_form = {
 	id = 'test_form',
 	spacing = 0.1,
 	margin = 0.7,
+	{ type = 'label', label = 'TITRE', width = 3 },
 	{ type = 'tab', label = 'node', orientation = 'vetical',
 		data = function(form)
 			local pos = form:get_context().pos
@@ -123,11 +124,11 @@ local inspector_form = {
 			},
 		},
 	},
---[[	{ type = 'hbox',
+	{ type = 'hbox',
 		{ type = 'button', width = 2, label= 'Cancel', exit = true, },
 		{	type = 'button', width = 2, label = 'Save', exit = true,
 			on_clicked = nofs.event.save },
-	},]]
+	},
 }
 
 
