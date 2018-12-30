@@ -50,7 +50,7 @@ local inspector_form = {
 	id = 'test_form',
 	spacing = 0.1,
 	margin = 0.7,
-	{ type = 'vbox',
+	{ type = 'tab', label = 'node', orientation = 'vetical',
 		data = function(form)
 			local pos = form:get_context().pos
 			local node = minetest.get_node(pos)
@@ -66,66 +66,68 @@ local inspector_form = {
 		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().data.param1 end },
 		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().data.param2 end },
 	},
-	{ type = 'label', height = 1, width = 6, label = "Metadata:" },
-	{ type = 'vbox',
-		max_items = 3,
-		overflow = 'scrollbar',
-		{
-			type = 'hbox',
-			data = function(form)
-					local data = {}
-					local pos = form:get_context().pos
-					if pos then
-						local meta = minetest.get_meta(pos)
-						local tab = meta:to_table()
-						for key, value in pairs(tab.fields) do
-							data[#data+1] = { key = key, value = value}
+	{ type = 'tab', label = 'meta', orientation = 'vetical',
+		{ type = 'label', height = 1, width = 6, label = "Metadata:" },
+		{ type = 'vbox',
+			max_items = 3,
+			overflow = 'scrollbar',
+			{
+				type = 'hbox',
+				data = function(form)
+						local data = {}
+						local pos = form:get_context().pos
+						if pos then
+							local meta = minetest.get_meta(pos)
+							local tab = meta:to_table()
+							for key, value in pairs(tab.fields) do
+								data[#data+1] = { key = key, value = value}
+							end
 						end
-					end
-					return data
-				end,
-			{ type = 'label', width = 2, height = nofs.fs_field_height,
-				init = function(item)
-					item:get_context().label = item.parent:get_context().data.key
-				end,
-			},
-			{ type = 'field', width = 4, height = nofs.fs_field_height,
-				init = function(item)
-					item:get_context().value = item.parent:get_context().data.value
-				end,
-				save = function(item)
-					local meta = minetest.get_meta(item.form:get_context().pos)
-					meta:set_string(item.parent:get_context().data.key, item:get_context().value)
-				end,
-			},
-			{ type = 'button', width = 1, height = nofs.fs_field_height, label="...",
-				on_clicked = function(item)
-					local data = item.parent:get_context().data
-					nofs.show_form(item.form.player_name,
-						{ id = 'test_form',
-							spacing = 0.1,
-							margin = 0.7,
-							{ type = 'label', width = 5, height = 1,
-								init = function(item) item:get_context().label = item.form:get_context().title end },
-							{ type = 'field', width = 5, height = 5,
-								init = function(item) item:get_context().value = item.form:get_context().value end,
-								save = function(item) minetest.get_meta(item.form:get_context().pos, item.form:get_context().key, item.form:get_context().value) end,
+						return data
+					end,
+				{ type = 'label', width = 2, height = nofs.fs_field_height,
+					init = function(item)
+						item:get_context().label = item.parent:get_context().data.key
+					end,
+				},
+				{ type = 'field', width = 4, height = nofs.fs_field_height,
+					init = function(item)
+						item:get_context().value = item.parent:get_context().data.value
+					end,
+					save = function(item)
+						local meta = minetest.get_meta(item.form:get_context().pos)
+						meta:set_string(item.parent:get_context().data.key, item:get_context().value)
+					end,
+				},
+				{ type = 'button', width = 1, height = nofs.fs_field_height, label="...",
+					on_clicked = function(item)
+						local data = item.parent:get_context().data
+						nofs.show_form(item.form.player_name,
+							{ id = 'test_form',
+								spacing = 0.5,
+								margin = 0.7,
+								{ type = 'label', width = 5,
+									init = function(item) item:get_context().label = item.form:get_context().title end },
+								{ type = 'textarea', width = 5, height = 5,
+									init = function(item) item:get_context().value = item.form:get_context().value end,
+									save = function(item) minetest.get_meta(item.form:get_context().pos, item.form:get_context().key, item.form:get_context().value) end,
+								},
+								{ type = 'hbox',
+									{ type = 'button', exit = true, label = 'Back' },
+									{ type = 'button', exit = true, label = 'Save', on_clicked = nofs.event.save },
+								},
 							},
-							{ type = 'hbox',
-								{ type = 'button', exit = true, label = 'Back' },
-								{ type = 'button', exit = true, label = 'Save', on_clicked = nofs.event.save },
-							},
-						},
-						{ title = data.key, key = data.key, value = data.value, pos = item.form:get_context().pos })
-				end,
+							{ title = data.key, key = data.key, value = data.value, pos = item.form:get_context().pos })
+					end,
+				},
 			},
 		},
 	},
-	{ type = 'hbox',
-		{ type = 'button', width = 2, height = 1, label= 'Cancel', exit = true, },
-		{	type = 'button', height = 1,	width = 2, label = 'Save', exit = true,
+--[[	{ type = 'hbox',
+		{ type = 'button', width = 2, label= 'Cancel', exit = true, },
+		{	type = 'button', width = 2, label = 'Save', exit = true,
 			on_clicked = nofs.event.save },
-	},
+	},]]
 }
 
 
