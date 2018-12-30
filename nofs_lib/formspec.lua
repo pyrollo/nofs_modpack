@@ -18,7 +18,10 @@
 	along with signs.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
--- Base size choosen to make spacing = { x = 1, y = 1 }
+-- This file is about formspec funky placement corrections
+-- Render all element using the same and consistent coordiante system
+
+-- Base size choosen to make 'spacing' = { x = 1, y = 1 }
 local base_size = { x = 4/5, y = 13/15 }
 
 -- Same computation as in guiFormSpecMenu.cpp

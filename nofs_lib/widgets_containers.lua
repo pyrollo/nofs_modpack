@@ -40,51 +40,56 @@ local container_scrollbar_width = 0.5
 
 -- Sizing vbox and hbox and places child items inside
 local function size_box(item)
-	local pos1, pos2, size1, size2
+	local ix_pos_main, ix_pos_other, ix_size_main, ix_size_other
 	local spacing = item:get_def_inherit('spacing') or 0
 
 	-- Process vbox and hbox the same way, just inverting coordinates
 	if item.widget.orientation == 'horizontal' then
-		pos1, pos2, size1, size2 = 'x', 'y', 'w', 'h'
+		ix_pos_main, ix_pos_other, ix_size_main, ix_size_other = 'x', 'y', 'w', 'h'
 	else
-		pos1, pos2, size1, size2 = 'y', 'x', 'h', 'w'
+		ix_pos_main, ix_pos_other, ix_size_main, ix_size_other = 'y', 'x', 'h', 'w'
 	end
 
-	local dim1, dim2 = 0, 0
+	local size_main, size_other, pos_main = 0, 0, 0
 
-	-- dim2 = max child size
+	-- size_other = max child size
 	for _, child in ipairs(item) do
-		if child.geometry[size2] > dim2 then
-			dim2 = child.geometry[size2]
+		if child.geometry[ix_size_other] > size_other then
+			size_other = child.geometry[ix_size_other]
 		end
 	end
 
 	local start_index = item:get_context().start_index or 1
 
-	-- Positionning and dim1 (=sum child sizes)
+	-- Positionning and size_main (=sum child sizes)
 	for index, child in ipairs(item) do
 		if not item.def.max_items or
 			index >= start_index and index < start_index + item.def.max_items
 		then
 			align_position(
 				child.geometry,
-				{ [pos1] = dim1, [pos2] = 0,
-					[size1] = child.geometry[size1], [size2] = dim2 },
+				{ [ix_pos_main] = pos_main,
+					[ix_pos_other] = 0,
+					[ix_size_main] = child.geometry[ix_size_main],
+					[ix_size_other] = size_other },
 				item.def.halign or "center", item.def.valign or "middle")
 
-			dim1 = dim1 + child.geometry[size1] + spacing
+			size_main = math.max(size_main, pos_main + child.geometry[ix_size_main])
+			-- TODO: have a generic management for widget overlapping.
+			if child.def.type ~= 'tab' then
+				pos_main = pos_main + child.geometry[ix_size_main] + spacing
+			end
 		end
 	end
-	dim1 = dim1 - spacing
 
   -- Improvements needed for overflow managing (type, positionning, visibility)
 	if item.def.overflow and item.def.overflow == 'scrollbar' then
-		dim2 = dim2 + spacing + container_scrollbar_width
+		size_other = size_other + spacing + container_scrollbar_width
 	end
 
 	-- Finally set box size according to previous findings
-	item.geometry[size1] = dim1
-	item.geometry[size2] = dim2
+	item.geometry[ix_size_main] = size_main
+	item.geometry[ix_size_other] = size_other
 end
 
 -- Containers generic rendering
@@ -116,7 +121,7 @@ local function render_container(item, offset)
 		-- Box must have an ID to be addressed
 		item:have_an_id()
 
-		local scrollbar = nofs.new_item(item.form, {
+		local scrollbar = nofs.new_item(item, {
 				type = 'scrollbar',
 				orientation = item.widget.orientation,
 				connected_to = item.id,
@@ -141,7 +146,15 @@ end
 ---------------------
 
 nofs.register_widget("form", {
+	is_root = true,
 	orientation = 'vertical',
+	handle_field_event = function(item, player_name, field)
+			-- Only event corresponding to form is tab event
+			if tonumber(field) then
+				item:get_context().tab = tonumber(field)
+			end
+			item.form:update()
+		end,
 	size = function(item)
 			local margin = item:get_def_inherit('margin') or 0
 			size_box(item)
@@ -153,8 +166,24 @@ nofs.register_widget("form", {
 			}
 		end,
 	render = function(item, offset)
+			item:have_an_id() -- Necessary for tabs
+			local extra = ""
+			if (default) then
+				extra = default.gui_bg..default.gui_bg_img..default.gui_slots
+			end
+
+			-- Tab management
+			if item.has_tabs then
+				local tabs = {}
+				for _, child in ipairs(item) do
+					tabs[#tabs+1] = child:get_attribute('label')
+				end
+				extra = extra..string.format('tabheader[0,0;%s;%s;%s;false;true]',
+					item.id, table.concat(tabs, ','), item:get_context().tab or 1)
+			end
+
 			return nofs.fs_element_string('size', item.geometry)
-				..render_container(item, offset or { x=0, y=0 })
+				..extra..render_container(item, offset or { x=0, y=0 })
 		end,
 })
 
@@ -170,7 +199,27 @@ nofs.register_widget("hbox", {
 	render = render_container,
 })
 
+--- Tabs
+-- Attributes :
+--	- Label
+nofs.register_widget("tab", {
+	parent_type = 'form',
+	exclusive_child_type = true,
+	orientation = 'vertical',
+	init = function(item)
+			item.parent.has_tabs = true
+		end,
+	size = size_box,
+	render = function(item, offset)
+		item:have_an_id()
+		if item == item.parent[item.parent:get_context().tab or 1] then
+			return render_container(item, offset)
+		else
+			return ""
+		end
+	end,
 
+})
 --[[
 -- Tables : two types:
 -- grids
@@ -228,5 +277,9 @@ nofs.register_widget("grid", {
 	render = render_container,
 })
 
-nofs.register_widget("gridrow", { render = render_container } )
+nofs.register_widget("gridrow", {
+	parent_type = 'grid',
+	exclusive_child_type = true,
+	render = render_container,
+} )
 ]]

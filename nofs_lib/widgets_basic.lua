@@ -104,6 +104,7 @@ nofs.register_widget("scrollbar", {
 --	- init
 
 nofs.register_widget("label", {
+	height = nofs.fs_field_height,
 	render = function(item, offset)
 			-- Use of textarea is much better than label as text is actually
 			-- limited to the giver area and label can be multiline
@@ -180,7 +181,6 @@ nofs.register_widget("button", {
 nofs.register_widget("field", {
 	height = nofs.fs_field_height,
 	width = 2,
---	holds_value = true,
 	init = function(item)
 		item:have_an_id()
 		local context = item:get_context()
@@ -197,24 +197,60 @@ nofs.register_widget("field", {
 		end
 	end,
 	render = function(item, offset)
-		local context = item:get_context()
 		-- Render
-		if item.def.hidden == 'true' then
-			-- TODO: Manage password field??
---			return string.format("pwdfield[%s;%s;%s]",
---				fspossize(item, offset), item.id, fsesc(avalue))
+		if item.def.hidden == true then
+			return nofs.fs_element_string('pwdfield',
+				nofs.add_offset(item.geometry, offset),  item.id,
+				fsesc(item:get_attribute('value')))
 		else
 			return nofs.fs_element_string('field',
 				nofs.add_offset(item.geometry, offset),  item.id,
 				fsesc(item:get_attribute('label')),
 				fsesc(item:get_attribute('value')))
-
---[[			return nofs.fs_element_string('textarea',
-				nofs.add_offset(item.geometry, offset),  item.id,
-				fsesc(item:get_attribute('label')),
-				fsesc(item:get_attribute('value')))
-			]]
 		end
+	end,
+	save = function(item)
+		-- Save to meta
+		if item.def.meta then
+			item.form:set_meta(item.def.meta, item:get_context().value)
+		end
+	end,
+})
+
+-- Textarea
+-- ========
+-- Attributes:
+--	- width, height
+--	- label (contextualizable)
+--	- value (contextualizable)
+--	- meta
+-- Triggers:
+--	- init
+--	- on_changed
+
+nofs.register_widget("textarea", {
+	height = 3,
+	width = 3,
+	init = function(item)
+		item:have_an_id()
+		local context = item:get_context()
+		if item.def.meta then
+			context.value = context.value or item.form:get_meta(item.def.meta)
+		end
+	end,
+	handle_field_event = function(item, player_name, field)
+		local context = item:get_context()
+		local oldvalue = context.value or ''
+		context.value = field
+		if context.value ~= oldvalue then
+			item:trigger('on_changed', oldvalue)
+		end
+	end,
+	render = function(item, offset)
+		return nofs.fs_element_string('textarea',
+			nofs.add_offset(item.geometry, offset),  item.id,
+			fsesc(item:get_attribute('label')),
+			fsesc(item:get_attribute('value')))
 	end,
 	save = function(item)
 		-- Save to meta
