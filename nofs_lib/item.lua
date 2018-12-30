@@ -22,21 +22,54 @@ Item = {}
 Item.__index = Item
 
 function Item:new(parent, def)
+	local form
+
+	-- Type checks
 	assert(type(def) == "table", 'Item definition must be a table.')
 	assert(type(def.type) == "string", 'Item must have a type.')
-	assert(not nofs.is_system_key(def.id or ""),
-		string.format('Cannot use "%s" as id, it is a reserved word.', def.id))
 	local widget = nofs.get_widget(def.type)
-	assert(widget ~= nil, 'Item type must be valid.')
-	assert(nofs.is_item(parent) or nofs.is_form(parent),
-		'First argument of Item:new should be a Form or an Item.')
+		assert(widget ~= nil, 'Item type must be valid.')
 
+	-- Parent check : Should be an Item or a Form for widgets with is_root=true
+	if widget.is_root then
+		assert(nofs.is_form(parent), string.format(
+			'Parent of a "%s" item must be a Form object.', def.type))
+		form = parent
+		parent = nil
+	else
+		assert(nofs.is_item(parent), string.format(
+			'Parent of a "%s" item must be an Item object.', def.type))
+		form = parent.form
+	end
+
+	assert(not nofs.is_system_key(def.id or ""), string.format(
+		'Cannot use "%s" as id, it is a reserved word.', def.id))
+
+	if widget.parent_type and not widget.is_root then
+		assert(parent.def.type == widget.parent_type, string.format(
+			'"%s" element can not have a "%s" parent.', def.type, parent.def.type))
+	end
+
+	-- Exclusive child type. In that case, parent must have all its children of
+	-- the same type
+	if parent and parent.exclusive_child_type then
+		assert(parent.exclusive_child_type == def.type, string.format(
+			'Child type "%s" incompatible with exclusive child type "%s"',
+				def.type, parent.exclusive_child_type))
+	elseif parent and widget.exclusive_child_type then
+		parent.exclusive_child_type = def.type
+		for _, child in ipairs(parent) do
+			assert(child.def.type == parent.exclusive_child_type, string.format(
+				'Child type "%s" incompatible with exclusive child type "%s"',
+				child.def.type, parent.exclusive_child_type))
+		end
+	end
 
 	local item = {
 		id = def.id,
 		registered_id = false,
-		parent = nofs.is_item(parent) and parent or nil,
-		form = nofs.is_form(parent) and parent or parent.form,
+		parent = parent,
+		form = form,
 		def = def,
 		widget = widget,
 		geometry = { x = 0, y = 0, w = 0, h = 0 },
@@ -114,6 +147,15 @@ function Item:size()
 	self.geometry.h = self.def.height or self.widget.height
 	if self.widget.size and type(self.widget.size) == 'function' then
 		self.widget.size(self)
+	end
+	if self.geometry.w and self.geometry.h then
+		return true
+	else
+		minetest.log("error", string.format("[nofs] %s%s element is missing %s.",
+		self.def.type, (self.id and ' ('..self.id..')' or ''),
+		(self.geometry.w and "" or "width")..(self.geometry.h and "" or
+				(self.geometry.w and "height" or " and height"))))
+		return false
 	end
 end
 
