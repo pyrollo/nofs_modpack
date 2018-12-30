@@ -125,9 +125,9 @@ local inspector_form = {
 		},
 	},
 	{ type = 'hbox',
-	{ type = 'button', width = 2, label= 'Cancel', exit = true, },
-	{	type = 'button', width = 2, label = 'Save', exit = true,
-			on_clicked = nofs.event.save },
+		{ type = 'button', width = 2, label= 'Cancel', exit = true, },
+		{	type = 'button', width = 2, label = 'Save', exit = true,
+				on_clicked = nofs.event.save },
 	},
 	{ type = 'pager' },
 }
