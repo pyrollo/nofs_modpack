@@ -79,7 +79,12 @@ end
 
 function Form:get_unused_id(prefix)
 	prefix = prefix or "other"
-	assert(not nofs.is_system_key(prefix), "Prefix must not be a system key.")
+	assert(prefix:sub(1,4) ~= "key_", string.format(
+			'"%s" is not a valid id prefix, item ids cannot start with "key_".',
+			prefix))
+	assert(prefix:match('^[A-Za-z0-9_:]+$'), string.format(
+			'"%s" is not a valid id prefix, item ids can contain only letters, number and "_".',
+			prefix))
 	local i = 1
 	while self.ids[prefix..i] do
 		i = i + 1
@@ -266,7 +271,7 @@ function Form:receive(fields)
 	local suspicious = false
 	for key, value in pairs(fields) do
 		local item = self.ids[key]
-		if not nofs.is_system_key(key) and not item then
+		if not item and key ~= "quit" and key:sub(1,4) ~= "key_" then
 			minetest.log('warning',
 				string.format('[nofs] Unwanted field "%s" for form "%s".',
 					key, self.item.id))
@@ -289,7 +294,6 @@ function Form:receive(fields)
 	self:run_triggers()
 
 	if fields.quit == "true" then
-		-- TODO: Trigger on_close event
 		self:close()
 	elseif self.updated then
 		self.updated = nil
@@ -327,6 +331,11 @@ function Form:close()
 			'[nofs] Form:close called while form not on top for player "%s".',
 			self.player_name))
 		return
+	end
+
+	-- On close trigger
+	if self.def.on_close and type(self.def.on_close)=='function' then
+		self.def.on_close(self)
 	end
 
 	stack:pop()

@@ -50,7 +50,7 @@ local function size_box(item)
 		ix_pos_main, ix_pos_other, ix_size_main, ix_size_other = 'y', 'x', 'h', 'w'
 	end
 
-	local size_main, size_other, pos_main = 0, 0, 0
+	local size_main, size_other, pos_main, overlap_size = 0, 0, -spacing, 0
 
 	-- size_other = max child size
 	for _, child in ipairs(item) do
@@ -66,18 +66,26 @@ local function size_box(item)
 		if not item.def.max_items or
 			index >= start_index and index < start_index + item.def.max_items
 		then
+			if child.widget.overlapping then
+				overlap_size = math.max(overlap_size, child.geometry[ix_size_main])
+			elseif overlap_size > 0 then
+				pos_main = pos_main + spacing + overlap_size
+				overlap_size = 0
+			end
+
 			align_position(
 				child.geometry,
-				{ [ix_pos_main] = pos_main,
+				{ [ix_pos_main] = pos_main + spacing,
 					[ix_pos_other] = 0,
 					[ix_size_main] = child.geometry[ix_size_main],
 					[ix_size_other] = size_other },
 				item.def.halign or "center", item.def.valign or "middle")
 
-			size_main = math.max(size_main, pos_main + child.geometry[ix_size_main])
-			-- TODO: have a generic management for widget overlapping.
-			if child.def.type ~= 'tab' then
-				pos_main = pos_main + child.geometry[ix_size_main] + spacing
+			size_main = math.max(size_main,
+				pos_main + spacing + child.geometry[ix_size_main])
+
+			if not child.widget.overlapping then
+				pos_main = pos_main + spacing + child.geometry[ix_size_main]
 			end
 		end
 	end
@@ -166,18 +174,18 @@ nofs.register_widget("form", {
 			}
 		end,
 	render = function(item, offset)
-			item:have_an_id() -- Necessary for tabs
 			local extra = ""
 			if (default) then
 				extra = default.gui_bg..default.gui_bg_img..default.gui_slots
 			end
 
 			-- Tab management
-			if item.has_tabs then
+			if item.tabs and #item.tabs > 0 then
 				local tabs = {}
-				for _, child in ipairs(item) do
-					tabs[#tabs+1] = child:get_attribute('label')
+				for _, tab in ipairs(item.tabs) do
+					tabs[#tabs+1] = tab:get_attribute('label')
 				end
+
 				extra = extra..string.format('tabheader[0,0;%s;%s;%s;false;true]',
 					item.id, table.concat(tabs, ','), item:get_context().tab or 1)
 			end
@@ -204,15 +212,16 @@ nofs.register_widget("hbox", {
 --	- Label
 nofs.register_widget("tab", {
 	parent_type = 'form',
-	exclusive_child_type = true,
+	overlapping = true,
 	orientation = 'vertical',
 	init = function(item)
-			item.parent.has_tabs = true
+			item.parent.tabs = item.parent.tabs or {}
+			item.parent.tabs[#item.parent.tabs+1] = item
 		end,
 	size = size_box,
 	render = function(item, offset)
 		item:have_an_id()
-		if item == item.parent[item.parent:get_context().tab or 1] then
+		if item == item.parent.tabs[item.parent:get_context().tab or 1] then
 			return render_container(item, offset)
 		else
 			return ""
