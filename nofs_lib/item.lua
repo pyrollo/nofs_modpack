@@ -176,6 +176,6 @@ function nofs.is_item(item)
 	return meta and meta == Item
 end
 
-function nofs.new_item(form, def, data)
-	return Item:new(form, def, data)
+function nofs.new_item(form, def)
+	return Item:new(form, def)
 end

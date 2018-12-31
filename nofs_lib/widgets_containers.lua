@@ -133,7 +133,7 @@ local function render_container(item, offset)
 				type = 'scrollbar',
 				orientation = item.widget.orientation,
 				connected_to = item.id,
-			}, {}) -- TODO :DATA?? -- To be linked to item? Context?
+			})
 
 		if item.def.orientation == 'horizontal' then
 			scrollbar.geometry = {
