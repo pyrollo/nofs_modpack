@@ -106,3 +106,13 @@ Sources: **field**, **checkbox**
 | scrollbar[X,Y;W,H;orientation;name;value] | ? | Not started |
 | table[X,Y;W,H;name;cell 1,cell 2,...,cell n;selected idx] | ? | Not started |
 | tablecolumns[type 1,opt 1a,opt 1b,...;type 2,opt 2a,opt 2b;...] | ? Not started |
+
+
+# Context fields
+(Context field usage)
+## Multi-instance container
+**start_index**: Starting index of displayed items.
+**max_index**: Maximum index of displayed items.
+**max_items**: Maximum number of displayed items.
+## Pager
+**current_page**: Current displayed page

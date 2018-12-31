@@ -124,6 +124,8 @@ local function render_container(item, offset)
 		end
 	end
 
+	self:get_context().max_index = #self
+
 	if overflow --and item.def.overflow and item.def.overflow == 'scrollbar'
 	then
 		-- Box must have an ID to be addressed
