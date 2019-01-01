@@ -127,10 +127,10 @@ local inspector_form = {
 	{ type = 'hbox',
 		{ type = 'button', width = 2, label= 'Cancel', exit = true, },
 		{	type = 'button', width = 2, label = 'Save', exit = true,
-			on_clicked = nofs.event.save },
+				on_clicked = nofs.event.save },
 	},
+	{ type = 'pager' },
 }
-
 
 minetest.register_tool("nofs_demo:node_inspector", {
     description = "Node inspector dev tool",

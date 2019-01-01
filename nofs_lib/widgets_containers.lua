@@ -124,6 +124,8 @@ local function render_container(item, offset)
 		end
 	end
 
+	item:get_context().max_index = #item
+
 	if overflow --and item.def.overflow and item.def.overflow == 'scrollbar'
 	then
 		-- Box must have an ID to be addressed
@@ -133,7 +135,7 @@ local function render_container(item, offset)
 				type = 'scrollbar',
 				orientation = item.widget.orientation,
 				connected_to = item.id,
-			}, {}) -- TODO :DATA?? -- To be linked to item? Context?
+			})
 
 		if item.def.orientation == 'horizontal' then
 			scrollbar.geometry = {

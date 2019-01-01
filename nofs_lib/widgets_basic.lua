@@ -57,7 +57,10 @@ nofs.register_widget("scrollbar", {
 				local connected =
 					item.form:get_element_by_id(item.def.connected_to)
 				if connected.def.max_items then
-					local max_index = #connected - connected.def.max_items
+					-- TODO manage the case when max_index does not exist
+					local max_index = connected:get_context().max_index
+						- connected.def.max_items + 1
+
 					local start_index = 1
 					if max_index > 1 then
 						start_index = scrollbar_get_index(event.value, 1, max_index)

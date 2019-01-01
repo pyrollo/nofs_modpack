@@ -270,7 +270,7 @@ end
 function Form:receive(fields)
 	local suspicious = false
 	for key, value in pairs(fields) do
-		local item = self.ids[key]
+		local item = self.ids[key:match("^([^.]+)")]
 		if not item and key ~= "quit" and key:sub(1,4) ~= "key_" then
 			minetest.log('warning',
 				string.format('[nofs] Unwanted field "%s" for form "%s".',
@@ -285,9 +285,10 @@ function Form:receive(fields)
 	end
 
 	-- Field events
-	for id, item in pairs(self.ids) do
-		if fields[id] then
-			item:handle_field_event(self.player_name, fields[id])
+	for key, value in pairs(fields) do
+		local id, subid = key:match("^([^.]+)[.]?(.*)$")
+		if self.ids[id] then
+			self.ids[id]:handle_field_event(self.player_name, fields[id], subid)
 		end
 	end
 
