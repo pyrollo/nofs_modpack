@@ -124,7 +124,7 @@ local function render_container(item, offset)
 		end
 	end
 
-	self:get_context().max_index = #self
+	item:get_context().max_index = #item
 
 	if overflow --and item.def.overflow and item.def.overflow == 'scrollbar'
 	then

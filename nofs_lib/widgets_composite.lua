@@ -65,7 +65,7 @@ nofs.register_widget("pager", {
 		local connected = item.def.connected_to and
 			item.form:get_element_by_id(item.def.connected_to)
 
-		local page_string = minetest_colorize("yellow", page)
+		local page_string = minetest.colorize("yellow", page)
 
 		if connected and connected.def.max_items then
 			if connected:get_context().max_index then
@@ -91,6 +91,13 @@ nofs.register_widget("pager", {
 				w = item.geometry.w/2,
 				h = item.geometry.h}, offset),
 			"", item.id..".label", page_string, "false", "false", "")
+		..nofs.fs_element_string('image_button',
+			nofs.add_offset({
+				x = item.geometry.x + item.geometry.w*1/4,
+				y = item.geometry.y,
+				w = item.geometry.w/2,
+				h = item.geometry.h}, offset),
+			"", item.id..".mask", "", "false", "false", "")
 		..nofs.fs_element_string('image_button',
 			nofs.add_offset({
 				x = item.geometry.x + item.geometry.w*3/4,

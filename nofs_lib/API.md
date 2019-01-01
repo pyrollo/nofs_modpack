@@ -113,6 +113,6 @@ Sources: **field**, **checkbox**
 ## Multi-instance container
 **start_index**: Starting index of displayed items.
 **max_index**: Maximum index of displayed items.
-**max_items**: Maximum number of displayed items.
+**max_items**: (in def for now) Maximum number of displayed items.
 ## Pager
 **current_page**: Current displayed page
