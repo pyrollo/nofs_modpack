@@ -301,16 +301,23 @@ nofs.register_widget("checkbox", {
 		end,
 })
 
--- WIP
---[[
+
+-- Inventory
+-- =========
+-- Attributes:
+--	- location (contextualizable) : current_player, node
+--	- list (contextualizable) : name of the inventory list
+--	- listring : belongs to the listring or not
+-- Context:
+--	- start_index
+
 nofs.register_widget("inventory", {
 	render = function(item, offset)
-		item:have_an_id()
-		return string.format("list[%s;%s;%s;]%s",
-			item.def.inventory or "current_player",
-			item.def.list or "main",
-			fspossize(item, offset),
-			item.def.listring and "listring[]" or "")
+			return nofs.fs_element_string('list',
+				nofs.add_offset(item.geometry, offset),
+				-- TODO : link node inventory to form's node
+				item:get_attribute('location') or "",
+				item:get_attribute('list') or "",
+				item:get_context().start_item or "")
 		end,
 })
-]]

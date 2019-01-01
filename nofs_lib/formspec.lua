@@ -45,6 +45,7 @@ local fsgeometry = {
 				(geometry.w - imgsize.x - padding.x*2 ) / spacing.x + 1,
 				(geometry.h - imgsize.y - padding.y*2 - btn_height*2/3) / spacing.y + 1)
 		end,
+-- list : see specific bellow
 	image = function(geometry)
 			return string.format("%g,%g;%g,%g",
 				geometry.x - padding.x/spacing.x,
@@ -52,12 +53,30 @@ local fsgeometry = {
 				geometry.w * spacing.x / imgsize.x,
 				geometry.h * spacing.y / imgsize.y)
 		end,
+	pwdfield = function(geometry) -- Same as field
+			return string.format("%g,%g;%g,0",
+				geometry.x,
+				geometry.y + btn_height*spacing.y,
+				geometry.w + 1 - imgsize.x/spacing.x)
+		end,
+	field = function(geometry)
+			return string.format("%g,%g;%g,0",
+				geometry.x,
+				geometry.y + btn_height*spacing.y,
+				geometry.w + 1 - imgsize.x/spacing.x)
+		end,
 	textarea = function(geometry)
 			return string.format("%g,%g;%g,%g",
 				geometry.x, -- It seems that for text_area, padding has been forgotten
 				geometry.y - btn_height/spacing.y,
 				geometry.w - imgsize.x + 1,
 				(geometry.h + spacing.y) / imgsize.y - 1)
+		end,
+	button = function(geometry) -- Same as field
+			return string.format("%g,%g;%g,0",
+				geometry.x,
+				geometry.y + btn_height*spacing.y,
+				geometry.w + 1 - imgsize.x/spacing.x)
 		end,
 	image_button = function(geometry)
 			return string.format("%g,%g;%g,%g",
@@ -94,33 +113,14 @@ local fsgeometry = {
 				geometry.w,
 				geometry.h)
 		end,
-	field = function(geometry)
-			return string.format("%g,%g;%g,0",
-				geometry.x,
-				geometry.y + btn_height*spacing.y,
-				geometry.w + 1 - imgsize.x/spacing.x)
-		end,
-	pwdfield = function(geometry) -- Same as field
-			return string.format("%g,%g;%g,0",
-				geometry.x,
-				geometry.y + btn_height*spacing.y,
-				geometry.w + 1 - imgsize.x/spacing.x)
-		end,
-	button = function(geometry) -- Same as field
-			return string.format("%g,%g;%g,0",
-				geometry.x,
-				geometry.y + btn_height*spacing.y,
-				geometry.w + 1 - imgsize.x/spacing.x)
-		end,
-
 }
 
 local fsspecific = {
-	inventory = function(geometry, location, list_name, starting_index)
+	list = function(geometry, location, list_name, starting_index)
 			return string.format("list[%s;%s;%g,%g;%g,%g;%s]",
 				location, list_name,
-				X, Y, W, H,
-				starting_index)
+				geometry.x, geometry.y, geometry.w, geometry.h,
+				starting_index or 1)
 		end,
 }
 
@@ -135,7 +135,7 @@ end
 
 function nofs.fs_element_string(type, geometry, ...)
 	if fsspecific[type] then
-		return string.format("%s[%s]", type, fsspecific[type](geometry, ...))
+		return fsspecific[type](geometry, ...)
 	else
 		assert (fsgeometry[type], string.format('Unknown element type "%s".', type))
 		return string.format("%s[%s;%s]", type, fsgeometry[type](geometry),

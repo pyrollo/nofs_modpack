@@ -50,8 +50,7 @@ local inspector_form = {
 	id = 'test_form',
 	spacing = 0.1,
 	margin = 0.7,
-	{ type = 'label', label = 'TITRE', width = 3 },
-	{ type = 'tab', label = 'node', orientation = 'vetical',
+	{ type = 'tab', label = 'node', orientation = 'vertical',
 		data = function(form)
 			local pos = form:get_context().pos
 			local node = minetest.get_node(pos)
@@ -67,7 +66,7 @@ local inspector_form = {
 		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().data.param1 end },
 		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().data.param2 end },
 	},
-	{ type = 'tab', label = 'meta', orientation = 'vetical',
+	{ type = 'tab', label = 'meta', orientation = 'vertical',
 		{ type = 'label', height = 1, width = 6, label = "Metadata:" },
 		{ type = 'vbox',
 			max_items = 3,
@@ -86,12 +85,12 @@ local inspector_form = {
 						end
 						return data
 					end,
-				{ type = 'label', width = 2, height = nofs.fs_field_height,
+				{ type = 'label', width = 2,
 					init = function(item)
 						item:get_context().label = item.parent:get_context().data.key
 					end,
 				},
-				{ type = 'field', width = 4, height = nofs.fs_field_height,
+				{ type = 'field', width = 4,
 					init = function(item)
 						item:get_context().value = item.parent:get_context().data.value
 					end,
@@ -100,7 +99,7 @@ local inspector_form = {
 						meta:set_string(item.parent:get_context().data.key, item:get_context().value)
 					end,
 				},
-				{ type = 'button', width = 1, height = nofs.fs_field_height, label="...",
+				{ type = 'button', width = 1, label="...",
 					on_clicked = function(item)
 						local data = item.parent:get_context().data
 						nofs.show_form(item.form.player_name,
@@ -124,12 +123,42 @@ local inspector_form = {
 			},
 		},
 	},
+	{ type = 'tab', label = 'inventory', orientation = 'vertical',
+		max_items = 1, id = 'inventory',
+		{ type = 'vbox',
+				data = function(form)
+					local data = {}
+					local pos = form:get_context().pos
+					if pos then
+						local inv = minetest.get_meta(pos):get_inventory()
+						for key, _ in pairs(inv:get_lists()) do
+							data[#data+1] = { list = key }
+						end
+					end
+					return data
+				end,
+			{ type = 'hbox',
+				{ type = 'label', width = 4,
+					init = function(item) item:get_context().label = 'Inventory: '..
+						item.parent.parent:get_context().data.list end },
+				{ type = 'pager', connected_to = 'inventory' },
+			},
+			{ type = 'inventory', height = 5, width = 8,
+				init = function(item)
+						local pos = item.form:get_context().pos
+						local context = item:get_context()
+						context.location = string.format('nodemeta:%g,%g,%g',
+							pos.x, pos.y, pos.z)
+						context.list = item.parent:get_context().data.list
+					end
+			}
+		},
+	},
 	{ type = 'hbox',
 		{ type = 'button', width = 2, label= 'Cancel', exit = true, },
 		{	type = 'button', width = 2, label = 'Save', exit = true,
 				on_clicked = nofs.event.save },
 	},
-	{ type = 'pager' },
 }
 
 minetest.register_tool("nofs_demo:node_inspector", {
