@@ -18,7 +18,7 @@
 	along with signs.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-Item = {}
+local Item = {}
 Item.__index = Item
 
 function Item:new(parent, def)
@@ -26,7 +26,7 @@ function Item:new(parent, def)
 
 	-- Type checks
 	assert(type(def) == "table", 'Item definition must be a table.')
-	assert(type(def.type) == "string", 'Item must have a type.')
+	assert(type(def.type) == "string", 'I_utem must have a type.')
 	local widget = nofs.get_widget(def.type)
 		assert(widget ~= nil, 'Item type must be valid.')
 
@@ -136,11 +136,11 @@ function Item:get_def_inherit(name)
 	end
 end
 
-function Item:size()
+function Item:lay_out()
 	self.geometry.w = self.def.width or self.widget.width
 	self.geometry.h = self.def.height or self.widget.height
-	if self.widget.size and type(self.widget.size) == 'function' then
-		self.widget.size(self)
+	if self.widget.lay_out and type(self.widget.lay_out) == 'function' then
+		self.widget.lay_out(self)
 	end
 	if self.geometry.w and self.geometry.h then
 		return true
@@ -154,13 +154,10 @@ function Item:size()
 end
 
 function Item:render(offset)
-	self.form:register_id(self)
-	-- Even "render" is overrideable
-	local fs = self:call('render', offset) or ''
 	if self:get_attribute('visible') == false then
 		return ''
 	else
-		return fs
+		return self:call('render') or ''
 	end
 end
 

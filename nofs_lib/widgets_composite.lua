@@ -58,8 +58,7 @@ nofs.register_widget("pager", {
 				item.form:update()
 			end
 		end,
-	render = function(item, offset)
-		item:have_an_id()
+	render = function(item)
 		local context = item:get_context()
 		local page = context.current_page or 1
 		local connected = item.def.connected_to and
@@ -78,32 +77,28 @@ nofs.register_widget("pager", {
 		page_string = page_string or minetest_colorize("yellow", page)
 
 		return nofs.fs_element_string('image_button',
-			nofs.add_offset({
-				x = item.geometry.x,
+			{	x = item.geometry.x,
 				y = item.geometry.y,
 				w = item.geometry.w/4,
-				h = item.geometry.h}, offset),
+				h = item.geometry.h},
 			"", item.id..".previous","<")
 		..nofs.fs_element_string('image_button',
-			nofs.add_offset({
-				x = item.geometry.x + item.geometry.w*1/4,
+			{	x = item.geometry.x + item.geometry.w*1/4,
 				y = item.geometry.y,
 				w = item.geometry.w/2,
-				h = item.geometry.h}, offset),
+				h = item.geometry.h},
 			"", item.id..".label", page_string, "false", "false", "")
 		..nofs.fs_element_string('image_button',
-			nofs.add_offset({
-				x = item.geometry.x + item.geometry.w*1/4,
+			{	x = item.geometry.x + item.geometry.w*1/4,
 				y = item.geometry.y,
 				w = item.geometry.w/2,
-				h = item.geometry.h}, offset),
+				h = item.geometry.h},
 			"", item.id..".mask", "", "false", "false", "")
 		..nofs.fs_element_string('image_button',
-			nofs.add_offset({
-				x = item.geometry.x + item.geometry.w*3/4,
+			{	x = item.geometry.x + item.geometry.w*3/4,
 				y = item.geometry.y,
 				w = item.geometry.w/4 ,
-				h = item.geometry.h}, offset),
+				h = item.geometry.h},
 			"", item.id..".next",">")
 		end,
 })

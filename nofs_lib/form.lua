@@ -53,27 +53,59 @@ end
 local Form = {}
 Form.__index = Form
 
+-- Fields overwritten in def:
+-- - widget
+-- - id (only if absent)
+
 function Form:new(player_name, def, context)
+	local form
+
+
+ATTENTION: Les IDS contiennent maintenant les IDs de def
+
+	local function check_ids(def)
+		assert(def.type, 'Item definition must have a type.')
+		def.widget = nofs.get_widget(def.type)
+		assert(def.widget, 'Widget type "'..def.type..'" unknown.')
+
+		if def.id then
+			assert(form.ids[def.id] == nil,
+				'Id "'..def.id..'" already used in the same form.')
+			form.ids[def.id] = def
+		end
+
+		for _, child in ipairs(def) do check(child) end
+	end
+
+	local function add_missing_ids(def)
+		if def.id == nil then	def.id = form:get_unused_id(deF.type)	end
+		for _, child in ipairs(def) do add_missing_ids(child) end
+	end
+
 	assert(type(def) == "table", "Form definition must be a table.")
 	assert(player_name, "Player name must be specified.")
-	check_types_and_ids(def)
 
-	local form = {
+	form = {
 		def = table.copy(def),
-		ids = {},            -- Items by id
+		ids = {},            -- Defs by id
 		item = {},           -- Root item and descendants.
 		item_contexts = {},  -- Persistant item contexts
 		form_context = {},   -- Global form context
 		player_name = player_name,
 		trigger_queues = { [1] = {}, [2] = {}, }
 	}
-	form.def.type = "form"
+	setmetatable(form, self)
+
+	form.def.type = form.def.type or "form"
+
+	-- Id verification and completion
+	check_ids(form.def)
+	complete(form.def)
 
 	if context then
 		form.form_context = table.copy(context)
 	end
 
-	setmetatable(form, self)
 	return form
 end
 
@@ -92,16 +124,8 @@ function Form:get_unused_id(prefix)
 	return prefix..i
 end
 
-function Form:register_id(item)
-	if item.id and not item.registered_id then
-		assert(self.ids[item.id] == nil,
-			'Id "'..item.id..'" already used in the same form.')
-		self.ids[item.id] = item
-		item.registered_id = true
-	end
-end
-
 function Form:get_element_by_id(id)
+	A REVOIR ?
 	return self.ids[id]
 end
 
@@ -245,19 +269,27 @@ function Form:build_items()
 end
 
 function Form:render()
-	local function recursive_size(item)
-		-- first, size children (if any)
+	local function recursive_lay_out(item)
 		for _, child in ipairs(item) do
-			if not recursive_size(child) then
+			if not recursive_lay_out(child) then
 				return false
 			end
 		end
-		return item:size()
+		return item:lay_out()
 	end
 
-	self:build_items()
-	if recursive_size(self.item) then
-		return self.item:render({ x = 0, y = 0 })
+	local function position(item, position)
+		item.item.geometry.x = item.geometry.x + position.x
+		item.item.geometry.y = item.geometry.y + position.y
+		for _, child in pairs(item) do
+			position(item, position)
+		end
+	end
+
+	self:build_items() --? TODO: Put somewhere else
+	if recursive_lay_out(self.item) then
+		position(self.item, { x = 0, y = 0 })
+		return self.item:render()
 	else
 		return ''
 	end
@@ -270,12 +302,14 @@ end
 function Form:receive(fields)
 	local suspicious = false
 	for key, value in pairs(fields) do
-		local item = self.ids[key:match("^([^.]+)")]
-		if not item and key ~= "quit" and key:sub(1,4) ~= "key_" then
-			minetest.log('warning',
-				string.format('[nofs] Unwanted field "%s" for form "%s".',
-					key, self.item.id))
-			suspicious = true
+		if key ~= "quit" and key:sub(1,4) ~= "key_" then
+			local item = self.ids[key:match("^([^.]+)")]
+			if not item or not item.widget.handle_field_event then
+				minetest.log('warning',
+					string.format('[nofs] Unwanted field "%s" for form "%s".',
+						key, self.item.id))
+				suspicious = true
+			end
 		end
 	end
 	if suspicious then

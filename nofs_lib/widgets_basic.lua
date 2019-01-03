@@ -89,10 +89,9 @@ nofs.register_widget("scrollbar", {
 			end
 		end
 	end,
-	render = function(item, offset)
-		item:have_an_id()
+	render = function(item)
 		return nofs.fs_element_string('scrollbar',
-			nofs.add_offset(item.geometry, offset),
+			item.geometry,
 			item.def.orientation or "vertical",
 			item.id, fsesc(item:get_attribute("value") or 0))
 	end,
@@ -108,11 +107,10 @@ nofs.register_widget("scrollbar", {
 
 nofs.register_widget("label", {
 	height = nofs.fs_field_height,
-	render = function(item, offset)
+	render = function(item)
 			-- Use of textarea is much better than label as text is actually
 			-- limited to the giver area and label can be multiline
-			return nofs.fs_element_string('textarea',
-				nofs.add_offset(item.geometry, offset),
+			return nofs.fs_element_string('textarea', item.geometry,
 				'', fsesc(item:get_attribute('label')), '')
 		end,
 })
@@ -133,7 +131,6 @@ nofs.register_widget("button", {
 	height = nofs.fs_field_height,
 	width = 2,
 	init = function(item)
-			item:have_an_id()
 			if item:get_attribute('item') and item:get_attribute('image') then
 				minetest.log('warning',
 					'Button can\'t have "image" and "item" attributes at once. '..
@@ -143,24 +140,21 @@ nofs.register_widget("button", {
 	handle_field_event = function(item, player_name, field)
 			item:trigger('on_clicked')
 		end,
-	render = function(item, offset)
+	render = function(item)
 			local aitem = item:get_attribute('item')
 			local aimage = item:get_attribute('image')
 
 			if aitem then
-				return nofs.fs_element_string('item_image_button',
-					nofs.add_offset(item.geometry, offset), fsesc(aitem), item.id,
-					fsesc(item:get_attribute('label')))
+				return nofs.fs_element_string('item_image_button', item.geometry,
+					fsesc(aitem), item.id, fsesc(item:get_attribute('label')))
 			else
 				-- Using image buttons because normal buttons does not size vertically
 				if item.def.exit == true then
-					return nofs.fs_element_string('image_button_exit',
-						nofs.add_offset(item.geometry, offset), fsesc(aimage), item.id,
-						fsesc(item:get_attribute('label')))
+					return nofs.fs_element_string('image_button_exit', item.geometry,
+						offset, fsesc(aimage), item.id, fsesc(item:get_attribute('label')))
 				else
-					return nofs.fs_element_string('image_button',
-						nofs.add_offset(item.geometry, offset), fsesc(aimage), item.id,
-						fsesc(item:get_attribute('label')))
+					return nofs.fs_element_string('image_button', item.geometry,
+						fsesc(aimage), item.id, fsesc(item:get_attribute('label')))
 				end
 			end
 		end,
@@ -185,7 +179,6 @@ nofs.register_widget("field", {
 	height = nofs.fs_field_height,
 	width = 2,
 	init = function(item)
-		item:have_an_id()
 		local context = item:get_context()
 		if item.def.meta then
 			context.value = context.value or item.form:get_meta(item.def.meta)
@@ -199,17 +192,14 @@ nofs.register_widget("field", {
 			item:trigger('on_changed', oldvalue)
 		end
 	end,
-	render = function(item, offset)
+	render = function(item)
 		-- Render
 		if item.def.hidden == true then
-			return nofs.fs_element_string('pwdfield',
-				nofs.add_offset(item.geometry, offset),  item.id,
+			return nofs.fs_element_string('pwdfield', item.geometry, item.id,
 				fsesc(item:get_attribute('value')))
 		else
-			return nofs.fs_element_string('field',
-				nofs.add_offset(item.geometry, offset),  item.id,
-				fsesc(item:get_attribute('label')),
-				fsesc(item:get_attribute('value')))
+			return nofs.fs_element_string('field', item.geometry, item.id,
+				fsesc(item:get_attribute('label')), fsesc(item:get_attribute('value')))
 		end
 	end,
 	save = function(item)
@@ -235,7 +225,6 @@ nofs.register_widget("textarea", {
 	height = 3,
 	width = 3,
 	init = function(item)
-		item:have_an_id()
 		local context = item:get_context()
 		if item.def.meta then
 			context.value = context.value or item.form:get_meta(item.def.meta)
@@ -249,11 +238,9 @@ nofs.register_widget("textarea", {
 			item:trigger('on_changed', oldvalue)
 		end
 	end,
-	render = function(item, offset)
-		return nofs.fs_element_string('textarea',
-			nofs.add_offset(item.geometry, offset),  item.id,
-			fsesc(item:get_attribute('label')),
-			fsesc(item:get_attribute('value')))
+	render = function(item)
+		return nofs.fs_element_string('textarea', item.geometry, item.id,
+			fsesc(item:get_attribute('label')), fsesc(item:get_attribute('value')))
 	end,
 	save = function(item)
 		-- Save to meta
@@ -276,7 +263,6 @@ nofs.register_widget("textarea", {
 
 nofs.register_widget("checkbox", {
 	init = function(item)
-			item:have_an_id()
 			local context = item:get_contect()
 			if item.def.meta then
 				context.value = context.value or item.form:get_meta(item.def.meta)
@@ -291,8 +277,7 @@ nofs.register_widget("checkbox", {
 			end
 			item:trigger('on_clicked')
 		end,
-	render = function(item, offset)
-			item:have_an_id()
+	render = function(item)
 			local alabel = item:get_attribute('label')
 			local avalue = item:get_attribute('value')
 			return string.format("checkbox[%s;%s;%s;%s]",
@@ -313,8 +298,7 @@ nofs.register_widget("checkbox", {
 
 nofs.register_widget("inventory", {
 	render = function(item, offset)
-			return nofs.fs_element_string('list',
-				nofs.add_offset(item.geometry, offset),
+			return nofs.fs_element_string('list', item.geometry,
 				-- TODO : link node inventory to form's node
 				item:get_attribute('location') or "",
 				item:get_attribute('list') or "",

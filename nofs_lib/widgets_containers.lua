@@ -39,7 +39,7 @@ end
 local container_scrollbar_width = 0.5
 
 -- Sizing vbox and hbox and places child items inside
-local function size_box(item)
+local function lay_out_box(item)
 	local ix_pos_main, ix_pos_other, ix_size_main, ix_size_other
 	local spacing = item:get_def_inherit('spacing') or 0
 
@@ -102,12 +102,7 @@ end
 
 -- Containers generic rendering
 --
-local function render_container(item, offset)
-
-	local inneroffset = {
-		x = offset.x + item.geometry.x,
-		y = offset.y + item.geometry.y
-	}
+local function render_container(item)
 
 	local start_index = item:get_context().start_index or 1
 
@@ -120,7 +115,7 @@ local function render_container(item, offset)
 		then
 			overflow = true
 		else
-			fs = fs..child:render(inneroffset)
+			fs = fs..child:render()
 		end
 	end
 
@@ -128,9 +123,6 @@ local function render_container(item, offset)
 
 	if overflow and item.def.overflow and item.def.overflow == 'scrollbar'
 	then
-		-- Box must have an ID to be addressed
-		item:have_an_id()
-
 		local scrollbar = nofs.new_item(item, {
 				type = 'scrollbar',
 				orientation = item.widget.orientation,
@@ -139,14 +131,16 @@ local function render_container(item, offset)
 
 		if item.def.orientation == 'horizontal' then
 			scrollbar.geometry = {
-				x = 0, y = item.geometry.h - container_scrollbar_width,
+				x = item.geometry.x,
+				y = item.geometry.y + item.geometry.h - container_scrollbar_width,
 				w = item.geometry.w, h = container_scrollbar_width }
 		else
 			scrollbar.geometry = {
-				x = item.geometry.w - container_scrollbar_width, y = 0,
+				x = item.geometry.x + item.geometry.w - container_scrollbar_width,
+				y = item.geometry.y,
 				w = container_scrollbar_width, h = item.geometry.h }
 		end
-		fs = fs..scrollbar:render(inneroffset)
+		fs = fs..scrollbar:render()
 	end
 
 	return fs
@@ -165,17 +159,17 @@ nofs.register_widget("form", {
 			end
 			item.form:update()
 		end,
-	size = function(item)
+	lay_out = function(item)
 			local margin = item:get_def_inherit('margin') or 0
-			size_box(item)
+			lay_out_box(item)
 			item.geometry = {
-				x = item.geometry.x + margin,
-				y = item.geometry.y + margin,
+				x = margin,
+				y = margin,
 				h = item.geometry.h + margin*2;
 				w = item.geometry.w + margin*2;
 			}
 		end,
-	render = function(item, offset)
+	render = function(item)
 			local extra = ""
 			if (default) then
 				extra = default.gui_bg..default.gui_bg_img..default.gui_slots
@@ -193,19 +187,19 @@ nofs.register_widget("form", {
 			end
 
 			return nofs.fs_element_string('size', item.geometry)
-				..extra..render_container(item, offset or { x=0, y=0 })
+				..extra..render_container(item)
 		end,
 })
 
 nofs.register_widget("vbox", {
 	orientation = 'vertical',
-	size = size_box,
+	lay_out = lay_out_box,
 	render = render_container,
 })
 
 nofs.register_widget("hbox", {
 	orientation = 'horizontal',
-	size = size_box,
+	lay_out = lay_out_box,
 	render = render_container,
 })
 
@@ -220,13 +214,12 @@ nofs.register_widget("tab", {
 			item.parent.tabs = item.parent.tabs or {}
 			item.parent.tabs[#item.parent.tabs+1] = item
 		end,
-	size = size_box,
-	render = function(item, offset)
-		item:have_an_id()
+	lay_out = lay_out_box,
+	render = function(item)
 		if item == item.parent.tabs[item.parent:get_context().tab or 1] then
-			return render_container(item, offset)
+			return render_container(item)
 		else
-			return ""
+			return ''
 		end
 	end,
 

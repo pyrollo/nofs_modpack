@@ -124,15 +124,6 @@ local fsspecific = {
 		end,
 }
 
-function nofs.add_offset(geometry, offset)
-	return {
-		x = geometry.x + offset.x,
-		y = geometry.y + offset.y,
-		w = geometry.w,
-		h = geometry.h,
-	}
-end
-
 function nofs.fs_element_string(type, geometry, ...)
 	if fsspecific[type] then
 		return fsspecific[type](geometry, ...)
