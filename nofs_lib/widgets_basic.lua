@@ -117,15 +117,6 @@ nofs.register_widget("label", {
 
 -- button
 -- ======
--- Attributes:
---	- width, height
---	- label (contextualizable)
---	- image (contextualizable)
---	- item (contextualizable)
---	- exit
--- Triggers:
---	- init
---	- on_clicked
 
 nofs.register_widget("button", {
 	height = nofs.fs_field_height,
@@ -163,21 +154,9 @@ nofs.register_widget("button", {
 		end,
 })
 
-
 -- Field
 -- =====
--- Attributes:
---	- width, height
---	- label (contextualizable)
---	- value (contextualizable)
---	- hidden
---	- meta
--- Triggers:
---	- init
---	- on_changed
 
--- Field also uses text area because its sizing is much better
--- --> But text is not centered !
 nofs.register_widget("field", {
 	height = nofs.fs_field_height,
 	width = 2,

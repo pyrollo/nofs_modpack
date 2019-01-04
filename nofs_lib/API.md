@@ -34,54 +34,122 @@ All fields are optional.
   * `is_root`: `true` if this widget can be a form root (default `false`)
   * `parent_type`: If set, ensure that the parent widget is of this type.
   * `children_type`: If set, ensure that all child widgets are of this type.
+  * `orientation`: For some containers, defines how children are laid out.
+  * `overlapping`: If `true`, indicates that the widgets overlaps other items. For example for "tab" widgets (Default : `false`).
 
 ### Callbacks
-`init`
-`handle_field_event`
-`render`: Returns the rendered widget
-`lay_out`: Place children and sizes widget according to them, if any.
-`save`
+`init(item)`: Called after Item instance creation to perform initialization
+tasks.
 
-# Items definition attributes
+`handle_field_event(item, fieldvalue, fieldname)`: Called when field received
+for this widget. `item` is the reference to the item instance, `fieldvalue` is
+the received field value, `fieldname` is the name of the field (usualy
+corresponding to item id).
+
+`render(item)`: Should return the formspec string corresponding to `item`
+instance
+
+`lay_out(item)`: Place children (if any) and sizes the element.
+`save(item)`: Called when Form:save() called. Should perform save operations.
+
+# Widget catalogue
 ## Common attributes
-- **id**: Identifier of the item. Must be unique in the form. If none given but
-required for technical purpose, a unique id is generated.
-- **type** (required): Type of widget
-- **width**, **height**: Size of the item
+  * `type`: Type of the item. This field is required and must correspond to a registerd widget.
+  * `id`: Item identifier. Must be unique in form, can be used to reference this item. Items with no ids are given one automatically.
+  * `width`: Item width (ignored for container widgets)
+  * `height`: Item height (ignored for container widgets). As a helper, standard field height is given by `nofs.fs_field_height`.
 
-## Containers
-Several containers works the same way: **vbox**, **hbox**, **form**.
+## Common triggers
+  * `init`: called when item instance is created. A good place to do some initialization stuff like setting the value of a field.
+  * `save`: Called when value have to be saved (when `Form:save` called).
 
-## Button
-- **label**: Label displayed on the button
-- **image**: Image displayed on the button
-- **item**: Item displayed on the button
+# Container widgets
+## form
+The form itself. Must be the root element for each form.
+  * `margin`: Margin around content (default 0)
+  * `orientation`: Defines how children are laid out. Can be "vertical" or "horizontal" (default "vertical").
 
-A button can't have both **image** and **item** attributes. In such case
-**item** attribute is ignored.
+## vbox and hbox
+Containers holding vertically or horizontally stacked children.
+  * `spacing` (inherits): Spacing between child elements.
+  * `valign`: Vertical alignment ("top", "middle", "bottom". Default "middle").
+  * `halign`: Horizontal alignment ("left", "center", "right". Default "center").
+  * `max_items`: Maximum displayed children. Extra children are not displayed.
+  * `overflow`: If more children than `max_items`, indicates what to do. For now, the only choice is "scrollbar" (default:`nil`).
 
-- **exit**: If true, the button will exit on click (form closing will be done by
-the client without waiting for the server to tell to close).
+## tab
+A tab page in a form (not allowed in other items).
+  * `label`: Tab page label.
+  * `orientation`: Defines how children are laid out. Can be "vertical" or "horizontal" (default "vertical").
+  * `spacing` (inherits): Spacing between child elements (default 0).
+  * `valign`: Vertical alignment ("top", "middle", "bottom". Default "middle").
+  * `halign`: Horizontal alignment ("left", "center", "right". Default "center").
+  * `max_items`: Maximum displayed children. Extra children are not displayed (default `nil`).
+  * `overflow`: If more children than `max_items`, indicates what to do. For now, the only choice is "scrollbar" (default: `nil`).
 
-## Field
-- **hidden**: If true, the field will not display text (password field)
+# Basic widgets
+## label
+### Attributes
+  * `label` (contextual): Text displayed
 
-## Label
-- **label**: Text displayed
-- **direction**: ''horizontal'' (default) or ''vertical'' text direction
+## button
+### Attributes
+  * `label`: Label displayed on the button
+  * `exit`: If `true`, button will quit form (default `false`).
+  * `image`: Image displayed on the button
+  * `item`: Item displayed on the button
+A button can't have both `image` and `item` attributes. In such case `item` attribute is ignored.
+### Triggers
+  * `on_clicked`: Function called when the button is clicked.
 
-## Inventory
+## field
+### Attributes
+  * `label` (contextual): Field label
+  * `value` (contextual): Default value
+  * `meta`: Field connected to metadata (player or node).
+  * `hidden`: Hidden (password) field if set to `true` (default `false`).
+### Triggers
+  * `on_changed`: Function called when the field value has been changed. This is not immediate but called as soon as another event happens (button click, form close...) and before this event trigger.
 
-# Events
+## textarea
+### Attributes
+  * `meta`: Textarea connected to metadata (player or node).
+  * `label` (contextual): Textarea label
+  * `value` (contextual): Default value
+### Triggers
+  * `on_changed`: Function called when the textarea value has been changed. This is not immediate but called as soon as another event happens (button click, form close...) and before this event trigger.
+
+## checkbox
+### Attributes
+  * `meta`: Checkbox connected to metadata (player or node).
+  * `label`: Checkbox label
+  * `value` (contextual): Default value (boolean)
+### Triggers
+  * `on_clicked`: Function called when the checkbox is clicked.
+  * `on_changed`: Function called when the checkbox value has been changed. This is not immediate but called as soon as another event happens (button click, form close...) and before this event trigger.
+
+## inventory
+### Attributes
+  * `location`: Inventory location
+  * `list`: Inventory list name
+
+## scrollbar
+### Attributes
+  * `connected_to`: Item id to connect to. Item should be responsive to scrollbar demands (hbox/vbox)
+  * `orientation` (default "vertical")
+### Triggers
+None yet.
+
+# Form triggers
 ## on_close
 Sources: **form**
-## on_clicked
-Sources: **button**, **checkbox**
-## on_changed
-Sources: **field**, **checkbox**
 
+# Connection of items to metadata
+TODO
+
+# WIP
 | Formspec element | nofs widget | Status |
-| --- | --- |
+| --- | --- | --- |
 | size[W,H] | Form level | Done |
 | position[X,Y] | Form level | Not started |
 | anchor[X,Y] | Form level | Not started |

@@ -123,10 +123,16 @@ local function render_container(item)
 
 	if overflow and item.def.overflow and item.def.overflow == 'scrollbar'
 	then
+
+-- TODO: Revoir ça, car il faut que l'id de la scrollbar soit unique et déclaré niveau form.
+-- Il faut peut être passer par une méthode côté form?
+-- Ensuite connected_to doit prendre le def.ID et s'arranger avec l'instance
+
 		local scrollbar = nofs.new_item(item, {
+				id = item.def_id..item.instance_id.'.scrollbar'
 				type = 'scrollbar',
 				orientation = item.widget.orientation,
-				connected_to = item.id,
+				connected_to = item.def.id,
 			})
 
 		if item.def.orientation == 'horizontal' then
