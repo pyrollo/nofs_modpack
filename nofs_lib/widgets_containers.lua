@@ -152,7 +152,7 @@ end
 nofs.register_widget("form", {
 	is_root = true,
 	orientation = 'vertical',
-	handle_field_event = function(item, player_name, field)
+	handle_field_event = function(item, field)
 			-- Only event corresponding to form is tab event
 			if tonumber(field) then
 				item:get_context().tab = tonumber(field)

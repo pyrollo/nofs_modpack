@@ -24,6 +24,24 @@ To be defined. Probably, data will be linked to items by item contexts.
 **Widget** are actually widget types. Each form item has a widget type
 (including the form itself that has implicitly the "form" widget type).
 
+# Widget registering
+
+## Widget definition
+### Fields
+All fields are optional.
+  * `width`: Default widget width
+  * `height`: Default widget height
+  * `is_root`: `true` if this widget can be a form root (default `false`)
+  * `parent_type`: If set, ensure that the parent widget is of this type.
+  * `children_type`: If set, ensure that all child widgets are of this type.
+
+### Callbacks
+`init`
+`handle_field_event`
+`render`: Returns the rendered widget
+`lay_out`: Place children and sizes widget according to them, if any.
+`save`
+
 # Items definition attributes
 ## Common attributes
 - **id**: Identifier of the item. Must be unique in the form. If none given but

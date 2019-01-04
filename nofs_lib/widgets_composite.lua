@@ -18,10 +18,16 @@
 	along with signs.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
+
+-- COMPOSITE : Faire un systeme avec multiples ids tous pointant sur le même item
+
 nofs.register_widget("pager", {
 	width = 3 * nofs.fs_field_height,
 	height = nofs.fs_field_height,
-	handle_field_event = function(item, player_name, field, subid)
+	componants = { 'next', 'previous', 'label', 'mask' },
+	handle_field_event = function(item, fieldvalue, fieldname)
+			local component = fieldname:match("[.]([^.]*)$")
+
 			local context = item:get_context()
 			local connected = item.def.connected_to and
 				item.form:get_element_by_id(item.def.connected_to)
@@ -30,10 +36,10 @@ nofs.register_widget("pager", {
 			local old_page = context.current_page
 			local max_page
 
-			if subid == "next" then
+			if component == "next" then
 				context.current_page = context.current_page + 1
 			end
-			if subid == "previous" then
+			if component == "previous" then
 				context.current_page = context.current_page - 1
 			end
 

@@ -62,9 +62,9 @@ local inspector_form = {
 			} }
 		end,
 		-- TODO: Creer un raccourci pour cette operation repetitive qui va être courrante
-		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().data.title end },
-		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().data.param1 end },
-		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().data.param2 end },
+		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().title end },
+		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().param1 end },
+		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().param2 end },
 	},
 	{ type = 'tab', label = 'meta', orientation = 'vertical',
 		{ type = 'label', height = 1, width = 6, label = "Metadata:" },
@@ -101,7 +101,7 @@ local inspector_form = {
 				},
 				{ type = 'button', width = 1, label="...",
 					on_clicked = function(item)
-						local data = item.parent:get_context().data
+						local data = item.parent:get_context()
 						nofs.show_form(item.form.player_name,
 							{ id = 'test_form',
 								spacing = 0.5,

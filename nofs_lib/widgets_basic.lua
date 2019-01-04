@@ -46,7 +46,7 @@ nofs.register_widget("scrollbar", {
 	-- Main one is that if form is refreshed while dragging the scrollbar cursor
 	-- then mouse looses the cursor. Have to temporize before actually refresh the
 	-- form
-	handle_field_event = function(item, player_name, field)
+	handle_field_event = function(item, field)
 		local event = minetest.explode_scrollbar_event(field)
 		local context = item:get_context()
 		if event.type == 'CHG' then
@@ -93,7 +93,7 @@ nofs.register_widget("scrollbar", {
 		return nofs.fs_element_string('scrollbar',
 			item.geometry,
 			item.def.orientation or "vertical",
-			item.id, fsesc(item:get_attribute("value") or 0))
+			item:get_id(), fsesc(item:get_attribute("value") or 0))
 	end,
 })
 
@@ -137,24 +137,27 @@ nofs.register_widget("button", {
 					'Ignoring "image" attribute.')
 			end
 		end,
-	handle_field_event = function(item, player_name, field)
+	handle_field_event = function(item, field)
 			item:trigger('on_clicked')
 		end,
 	render = function(item)
-			local aitem = item:get_attribute('item')
-			local aimage = item:get_attribute('image')
+			local a_item = item:get_attribute('item')
+			local a_image = item:get_attribute('image')
 
-			if aitem then
-				return nofs.fs_element_string('item_image_button', item.geometry,
-					fsesc(aitem), item.id, fsesc(item:get_attribute('label')))
+			if a_item then
+				return nofs.fs_element_string('item_image_button',
+					item.geometry, fsesc(a_item), item:get_id(),
+					fsesc(item:get_attribute('label')))
 			else
 				-- Using image buttons because normal buttons does not size vertically
 				if item.def.exit == true then
-					return nofs.fs_element_string('image_button_exit', item.geometry,
-						offset, fsesc(aimage), item.id, fsesc(item:get_attribute('label')))
+					return nofs.fs_element_string('image_button_exit',
+						item.geometry, offset, fsesc(a_image), item:get_id(),
+						fsesc(item:get_attribute('label')))
 				else
-					return nofs.fs_element_string('image_button', item.geometry,
-						fsesc(aimage), item.id, fsesc(item:get_attribute('label')))
+					return nofs.fs_element_string('image_button',
+						item.geometry, fsesc(a_image), item:get_id(),
+						fsesc(item:get_attribute('label')))
 				end
 			end
 		end,
@@ -184,7 +187,7 @@ nofs.register_widget("field", {
 			context.value = context.value or item.form:get_meta(item.def.meta)
 		end
 	end,
-	handle_field_event = function(item, player_name, field)
+	handle_field_event = function(item, field)
 		local context = item:get_context()
 		local oldvalue = context.value or ''
 		context.value = field
@@ -230,7 +233,7 @@ nofs.register_widget("textarea", {
 			context.value = context.value or item.form:get_meta(item.def.meta)
 		end
 	end,
-	handle_field_event = function(item, player_name, field)
+	handle_field_event = function(item, field)
 		local context = item:get_context()
 		local oldvalue = context.value or ''
 		context.value = field
@@ -239,8 +242,9 @@ nofs.register_widget("textarea", {
 		end
 	end,
 	render = function(item)
-		return nofs.fs_element_string('textarea', item.geometry, item.id,
-			fsesc(item:get_attribute('label')), fsesc(item:get_attribute('value')))
+		return nofs.fs_element_string('textarea',
+			item.geometry, item:get_id(), fsesc(item:get_attribute('label')),
+			fsesc(item:get_attribute('value')))
 	end,
 	save = function(item)
 		-- Save to meta
@@ -268,7 +272,7 @@ nofs.register_widget("checkbox", {
 				context.value = context.value or item.form:get_meta(item.def.meta)
 			end
 		end,
-	handle_field_event = function(item, player_name, field)
+	handle_field_event = function(item, field)
 			local context = item:get_context()
 			local oldvalue = item.value
 			context.value = field
@@ -278,11 +282,10 @@ nofs.register_widget("checkbox", {
 			item:trigger('on_clicked')
 		end,
 	render = function(item)
-			local alabel = item:get_attribute('label')
-			local avalue = item:get_attribute('value')
-			return string.format("checkbox[%s;%s;%s;%s]",
-				fspos(item, offset), item.id, fsasc(alabel),
-				avalue == "true" and "true" or "false")
+			return nofs.fs_element_string('checkbox',
+				item.geometry, item:get_id(),
+				fsesc(item:get_attribute('label')),
+				item:get_attribute('value') == "true" and "true" or "false")
 		end,
 })
 
