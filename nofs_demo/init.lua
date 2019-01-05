@@ -86,17 +86,17 @@ local inspector_form = {
 						return data
 					end,
 				{ type = 'label', width = 2,
-					init = function(item)
-						item:get_context().label = item.parent:get_context().data.key
-					end,
+--					init = function(item)
+--						item:get_context().label = item:get_context().key
+--					end,
 				},
 				{ type = 'field', width = 4,
-					init = function(item)
-						item:get_context().value = item.parent:get_context().data.value
-					end,
+--					init = function(item)
+--						item:get_context().value = item:get_context().value
+--					end,
 					save = function(item)
 						local meta = minetest.get_meta(item.form:get_context().pos)
-						meta:set_string(item.parent:get_context().data.key, item:get_context().value)
+						meta:set_string(item:get_context().key, item:get_context().value)
 					end,
 				},
 				{ type = 'button', width = 1, label="...",

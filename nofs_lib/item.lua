@@ -24,11 +24,10 @@ local Item = {}
 Item.__index = Item
 
 function Item:new(form, parent, def, instance_id)
-	local form
 
 	-- Type checks
 	assert(type(def) == "table", 'Item definition must be a table.')
-	assert(type(def.widget) == "string", 'Definition must have a widget.')
+	assert(type(def.widget) == "table", 'Definition widget must be a table.')
 
 	-- Instanciation
 	local item = {
@@ -79,14 +78,14 @@ function Item:handle_field_event(fieldvalue, fieldname)
 end
 
 function Item:set_context(data)
-	for key, value in data
+	for key, value in pairs(data) do
 		self.context[key] = value
 	end
 end
 
 function Item:lay_out()
-	self.geometry.w = self.def.width or self.widget.width
-	self.geometry.h = self.def.height or self.widget.height
+	self.geometry.w = self.def.width or self.def.widget.width
+	self.geometry.h = self.def.height or self.def.widget.height
 	if self.def.widget.lay_out and type(self.def.widget.lay_out) == 'function'
 	then
 		self.def.widget.lay_out(self)
@@ -134,8 +133,8 @@ end
 function Item:get_def_inherit(name)
 	if self.def[name] then
 		return self.def[name]
-	elseif self.widget.defaults and self.widget.defaults[name] then
-		return self.widget.defaults[name]
+	elseif self.def.widget.defaults and self.def.widget.defaults[name] then
+		return self.def.widget.defaults[name]
 	elseif self.parent then
 		return self.parent:get_def_inherit(name)
 	end
@@ -155,6 +154,6 @@ function nofs.is_item(item)
 	return meta and meta == Item
 end
 
-function nofs.new_item(form, def)
-	return Item:new(form, def)
+function nofs.new_item(form, parent, def, instance_id)
+	return Item:new(form, parent, def, instance_id)
 end

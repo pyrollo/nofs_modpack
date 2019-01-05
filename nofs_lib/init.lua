@@ -31,4 +31,9 @@ dofile(nofs.path..'/widgets_composite.lua')
 dofile(nofs.path..'/form.lua')
 dofile(nofs.path..'/item.lua')
 
---dofile(nofs.path..'/render.lua')
+-- Helpers
+-- =======
+nofs.event = {
+	save = function(item) item.form:save() end,
+	close = function(item) item.form:close() end,
+}

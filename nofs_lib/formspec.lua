@@ -124,10 +124,12 @@ local fsspecific = {
 		end,
 }
 
+-- TODO: Manage nil elements when not at end (tables starting with index 2 or more)
 function nofs.fs_element_string(type, geometry, ...)
 	if fsspecific[type] then
 		return fsspecific[type](geometry, ...)
 	else
+--		print(type, dump({...}))
 		assert (fsgeometry[type], string.format('Unknown element type "%s".', type))
 		return string.format("%s[%s;%s]", type, fsgeometry[type](geometry),
 			table.concat({...}, ";"))

@@ -31,12 +31,12 @@ local function is_valid_id(id)
 	end
 	if id:sub(1,4) == "key_" then
 		return false, string.format(
-		 '"%s" is not a valid item id, item ids cannot start with "key_".', id))
+		 '"%s" is not a valid item id, item ids cannot start with "key_".', id)
 	end
 	if not id:match('^[A-Za-z0-9_:]+$') then
 		return false, string.format(
 			'"%s" is not a valid item id, item ids can contain only letters, number and "_".',
-			def.id))
+			def.id)
 	end
 end
 
@@ -45,18 +45,18 @@ end
 -- Add links to widget definitions
 -- Collect ids and adds missing ids.
 
-local function check_def(self)
+local function check_def(def)
 	local function type_and_id_check(parent, def, ids)
 		-- Type validity
 		assert(def.type, 'Item definition must have a type.')
 		def.widget = nofs.get_widget(def.type)
 		assert(def.widget, string.format('Widget type "%s" unknown.', def.type))
 		assert(parent or def.widget.is_root == true,
-			string.format('Item type "%s" can not be root.', deF.type))
+			string.format('Item type "%s" can not be root.', def.type))
 		if parent and def.widget.parent_type then
 			assert(def.widget.parent_type == parent.type,
 				string.format('Item type "%s" can have only "%s" parent no "%s" parent.',
-					deF.type, def.widget.parent_type, parent.type))
+					def.type, def.widget.parent_type, parent.type))
 		end
 		if parent and parent.widget.children_type then
 			assert(def.widget.type == parent.widget.children_type,
@@ -74,13 +74,13 @@ local function check_def(self)
 			assert(def.id:match('^[A-Za-z0-9_:]+$'), string.format(
 				'"%s" is not a valid item id, item ids can contain only letters, number and "_".',
 				def.id))
-			asset(not ids[def.id], string.format(
+			assert(not ids[def.id], string.format(
 				'"%s" id already in use in this form.', def.id))
 			ids[def.id] = def
 		end
 
 		for _, child in ipairs(def) do
-			type_and_id_check(self, child, ids)
+			type_and_id_check(def, child, ids)
 		end
 	end
 
@@ -93,13 +93,13 @@ local function check_def(self)
 		end
 
 		for _, child in ipairs(def) do
-			add_missing_id(self, child)
+			add_missing_id(child, ids)
 		end
 	end
 
 	local ids = {}
-	type_and_id_check(self.def, ids)
-	add_missing_id(self.def, ids)
+	type_and_id_check(nil, def, ids)
+	add_missing_id(def, ids)
 end
 
 --------------------------------------------------------------------------------
@@ -117,8 +117,11 @@ Form.__index = Form
 -- - widget
 -- - id (only if absent)
 
+-- TODO:Il faudrait séparer Form en Form et FormInstance. Form un objet a créer une fois, et FormInstance à créer par joueur
+
 function Form:new(player_name, def, context)
 	assert(type(def) == "table", "Form definition must be a table.")
+
 	assert(player_name, "Player name must be specified.")
 
 	local new = {
@@ -146,7 +149,9 @@ end
 -- C'est ici qu'on peut vérifier le cas statique pour lequel on n'a pas le droit à
 -- - data
 -- - autre champs ?
+
 function Form:build_instance()
+
 	local function create_items(parent, def, instance_id)
 		local dataset = nil
 		if def.data then
@@ -161,12 +166,14 @@ function Form:build_instance()
 			dataset = {{}}
 		end
 
-		assert(parent or #dataset == 1),
+		assert(parent or #dataset == 1,
 			"Root form item must have exactly one instance")
 
 		for index, data in ipairs(dataset) do
-			local instance_id = (#dataset > 1) and parent.instance_id.."."..index
-				or parent.instance_id
+			local instance_id = (parent and parent.instance_id) or ''
+			if #dataset > 1 then
+				instance_id = instance_id.."."..index
+			end
 
 			local item = nofs.new_item(self, parent, def, instance_id)
 
@@ -200,10 +207,7 @@ function Form:build_instance()
 		end
 	end
 
-	-- Empty ids
 	self.ids = {}
-
-	-- Instance creation
 	create_items(nil, self.def, '')
 end
 
@@ -217,11 +221,11 @@ function Form:render()
 		return item:lay_out()
 	end
 
-	local function position(item, position)
-		item.item.geometry.x = item.geometry.x + position.x
-		item.item.geometry.y = item.geometry.y + position.y
-		for _, child in pairs(item) do
-			position(item, position)
+	local function position(item, pos)
+		item.geometry.x = item.geometry.x + pos.x
+		item.geometry.y = item.geometry.y + pos.y
+		for _, child in ipairs(item) do
+			position(child, { x = item.geometry.x, y = item.geometry.y})
 		end
 	end
 
@@ -338,7 +342,7 @@ function Form:receive(fields)
 	for key, value in pairs(fields) do
 		if key ~= "quit" and key:sub(1,4) ~= "key_" then
 			local item = self.ids[key]
-			if not item or not item.widget.handle_field_event then
+			if not item or not item.def.widget.handle_field_event then
 				minetest.log('warning',
 					string.format('[nofs] Unwanted field "%s" for form "%s".',
 						key, self.item:get_id()))
@@ -354,7 +358,9 @@ function Form:receive(fields)
 
 	-- Field events
 	for name, value in pairs(fields) do
-		self.ids[key]:handle_field_event(value, name)
+		if self.ids[name] then
+			self.ids[name]:handle_field_event(value, name)
+		end
 	end
 
 	self:run_triggers()
@@ -371,6 +377,8 @@ function Form:show()
 	-- Kind of random name -- Increases security ?
 	self.name = self.name or string.format('nofs:'..minetest.get_us_time())
 	nofs.get_form_stack(self.player_name):push(self)
+	print(self:render())
+
 	minetest.show_formspec(self.player_name, self.name, self:render())
 end
 
@@ -381,7 +389,7 @@ function Form:refresh()
 			'[nofs] Form:refresh called while form not on top for player "%s".',
 			self.player_name))
 	else
-		local fs = self:render()
+		local fs = self:render(player_name)
 		minetest.show_formspec(self.player_name, self.name, fs)
 		-- Redisplay the form 0.1 s after to ensure form is displayed (sometimes
 		-- displaying a form right after closing one does not work).

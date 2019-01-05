@@ -44,7 +44,7 @@ local function lay_out_box(item)
 	local spacing = item:get_def_inherit('spacing') or 0
 
 	-- Process vbox and hbox the same way, just inverting coordinates
-	if item.widget.orientation == 'horizontal' then
+	if item.def.widget.orientation == 'horizontal' then
 		ix_pos_main, ix_pos_other, ix_size_main, ix_size_other = 'x', 'y', 'w', 'h'
 	else
 		ix_pos_main, ix_pos_other, ix_size_main, ix_size_other = 'y', 'x', 'h', 'w'
@@ -66,7 +66,7 @@ local function lay_out_box(item)
 		if not item.def.max_items or
 			index >= start_index and index < start_index + item.def.max_items
 		then
-			if child.widget.overlapping then
+			if child.def.widget.overlapping then
 				overlap_size = math.max(overlap_size, child.geometry[ix_size_main])
 			elseif overlap_size > 0 then
 				pos_main = pos_main + spacing + overlap_size
@@ -84,7 +84,7 @@ local function lay_out_box(item)
 			size_main = math.max(size_main,
 				pos_main + spacing + child.geometry[ix_size_main])
 
-			if not child.widget.overlapping then
+			if not child.def.widget.overlapping then
 				pos_main = pos_main + spacing + child.geometry[ix_size_main]
 			end
 		end
@@ -127,11 +127,11 @@ local function render_container(item)
 -- TODO: Revoir ça, car il faut que l'id de la scrollbar soit unique et déclaré niveau form.
 -- Il faut peut être passer par une méthode côté form?
 -- Ensuite connected_to doit prendre le def.ID et s'arranger avec l'instance
-
+--[[
 		local scrollbar = nofs.new_item(item, {
-				id = item.def_id..item.instance_id.'.scrollbar'
+				id = item:get_id()..'.scrollbar',
 				type = 'scrollbar',
-				orientation = item.widget.orientation,
+				orientation = item.def.widget.orientation,
 				connected_to = item.def.id,
 			})
 
@@ -147,6 +147,7 @@ local function render_container(item)
 				w = container_scrollbar_width, h = item.geometry.h }
 		end
 		fs = fs..scrollbar:render()
+		]]
 	end
 
 	return fs
@@ -189,7 +190,7 @@ nofs.register_widget("form", {
 				end
 
 				extra = extra..string.format('tabheader[0,0;%s;%s;%s;false;true]',
-					item.id, table.concat(tabs, ','), item:get_context().tab or 1)
+					item:get_id(), table.concat(tabs, ','), item:get_context().tab or 1)
 			end
 
 			return nofs.fs_element_string('size', item.geometry)

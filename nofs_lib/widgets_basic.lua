@@ -34,12 +34,6 @@ end
 
 -- scrollbar
 -- =========
--- Attributes
---	- width, height
---	- orientation
---	- value (contextualizable)
--- Triggers
---	- init
 
 nofs.register_widget("scrollbar", {
 	-- This is a bit complex. Default scrollbar management have big issues.
@@ -99,11 +93,6 @@ nofs.register_widget("scrollbar", {
 
 -- label
 -- =====
--- Attributes:
---	- width, height
---	- label (contextualizable)
--- Triggers:
---	- init
 
 nofs.register_widget("label", {
 	height = nofs.fs_field_height,
@@ -143,7 +132,7 @@ nofs.register_widget("button", {
 				-- Using image buttons because normal buttons does not size vertically
 				if item.def.exit == true then
 					return nofs.fs_element_string('image_button_exit',
-						item.geometry, offset, fsesc(a_image), item:get_id(),
+						item.geometry, fsesc(a_image), item:get_id(),
 						fsesc(item:get_attribute('label')))
 				else
 					return nofs.fs_element_string('image_button',
@@ -177,10 +166,10 @@ nofs.register_widget("field", {
 	render = function(item)
 		-- Render
 		if item.def.hidden == true then
-			return nofs.fs_element_string('pwdfield', item.geometry, item.id,
+			return nofs.fs_element_string('pwdfield', item.geometry, item:get_id(),
 				fsesc(item:get_attribute('value')))
 		else
-			return nofs.fs_element_string('field', item.geometry, item.id,
+			return nofs.fs_element_string('field', item.geometry, item:get_id(),
 				fsesc(item:get_attribute('label')), fsesc(item:get_attribute('value')))
 		end
 	end,
