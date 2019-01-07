@@ -62,9 +62,10 @@ local inspector_form = {
 			} }
 		end,
 		-- TODO: Creer un raccourci pour cette operation repetitive qui va être courrante
-		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().title end },
-		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().param1 end },
-		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item.parent:get_context().param2 end },
+		-- Ajouter un champ "context" pour lier le label au context ou un "${title}" comme valeur ?
+		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item:get_context().title end },
+		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item:get_context().param1 end },
+		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item:get_context().param2 end },
 	},
 	{ type = 'tab', label = 'meta', orientation = 'vertical',
 		{ type = 'label', height = 1, width = 6, label = "Metadata:" },
@@ -86,22 +87,18 @@ local inspector_form = {
 						return data
 					end,
 				{ type = 'label', width = 2,
---					init = function(item)
---						item:get_context().label = item:get_context().key
---					end,
+					init = function(item)
+						item:get_context().label = item:get_context().key
+					end,
 				},
 				{ type = 'field', width = 4,
---					init = function(item)
---						item:get_context().value = item:get_context().value
---					end,
 					save = function(item)
 						local meta = minetest.get_meta(item.form:get_context().pos)
-						meta:set_string(item:get_context().key, item:get_context().value)
+						meta:set_string(item:get_context().key, item:get_context().key)
 					end,
 				},
 				{ type = 'button', width = 1, label="...",
 					on_clicked = function(item)
-						local data = item.parent:get_context()
 						nofs.show_form(item.form.player_name,
 							{ id = 'test_form',
 								spacing = 0.5,
@@ -140,7 +137,7 @@ local inspector_form = {
 			{ type = 'hbox',
 				{ type = 'label', width = 4,
 					init = function(item) item:get_context().label = 'Inventory: '..
-						item.parent.parent:get_context().data.list end },
+						item:get_context().list end },
 				{ type = 'pager', connected_to = 'inventory' },
 			},
 			{ type = 'inventory', height = 5, width = 8,
@@ -149,7 +146,6 @@ local inspector_form = {
 						local context = item:get_context()
 						context.location = string.format('nodemeta:%g,%g,%g',
 							pos.x, pos.y, pos.z)
-						context.list = item.parent:get_context().data.list
 					end
 			}
 		},

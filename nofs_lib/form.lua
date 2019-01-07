@@ -169,42 +169,45 @@ function Form:build_instance()
 		assert(parent or #dataset == 1,
 			"Root form item must have exactly one instance")
 
+		local id = def.id
 		for index, data in ipairs(dataset) do
-			local instance_id = (parent and parent.instance_id) or ''
+			local instance_id = instance_id or ''
 			if #dataset > 1 then
 				instance_id = instance_id.."."..index
 			end
 
-			local item = nofs.new_item(self, parent, def, instance_id)
+			-- TODO: Instance id management is a bit hacky
+			def.id = id..instance_id
+			local item = nofs.new_item(self, parent, def)
 
 			-- If composite widget, register item several times
 			if def.widget.componants then
 				for _, componant in ipairs(def.widget.componants) do
-					self.ids[def.id..instance_id..'.'..componant] = item
+					self.ids[def.id..'.'..componant] = item
 				end
 			else
-				self.ids[def.id..instance_id] = item
+				self.ids[def.id] = item
 			end
 
 			if parent == nil then
 				self.item = item
 			end
 
--- Il faut conserver le contexte precedent et le rattacher
--- En fait pour les data, il faudrait pouvoir recharcher quand necessaire
-			-- TODO: to be improved
-			if self.item_contexts[def.id..instance_id] then
+-- ICI CA NE VA PAS. Il y a un problème de parenté si on prend un contexte ancien + un context nouveau
+-- Le lien de parenté devrait se faire par les ID toujours.
+			if self.item_contexts[def.id] then
 				item.context = self.item_contexts
 			else
-				self.item_contexts[def.id..instance_id] = item.context
+				self.item_contexts[def.id] = item.context
 			end
-			-- TODO: Question compliquée : que faut il remetre dans le contexte ? et que faut il garder? (penser au changement de nombre de donnees)
-			item:set_context(data)
+
+			item:set_context(data, true)
 
 			for _, childdef in ipairs(def) do
 				create_items(item, childdef, instance_id)
 			end
 		end
+		def.id = id
 	end
 
 	self.ids = {}
@@ -239,8 +242,8 @@ function Form:render()
 	end
 end
 
-function Form:get_element_by_id(id, instance_id)
-	return self.ids[id..(instance_id or '')]
+function Form:get_element_by_id(id)
+	return self.ids[id]
 end
 
 -- Priority in trigger execution, lower is first
@@ -322,15 +325,8 @@ function Form:set_meta(meta, value)
 end
 
 -- Ensure persistance of item contexts
-function Form:get_context(item)
-	if item then
-		if not self.item_contexts[item.id] then
-			self.item_contexts[item.id] = {}
-		end
-		return self.item_contexts[item.id]
-	else
-		return self.form_context
-	end
+function Form:get_context()
+	return self.form_context
 end
 
 function Form:update()

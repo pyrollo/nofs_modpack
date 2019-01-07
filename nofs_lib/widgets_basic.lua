@@ -242,9 +242,9 @@ nofs.register_widget("checkbox", {
 		end,
 	handle_field_event = function(item, field)
 			local context = item:get_context()
-			local oldvalue = item.value
-			context.value = field
-			if context.value ~= oldvalue then
+			local oldvalue = context.value
+			if context.value ~= field then
+				context.value = field
 				item:trigger('on_changed', oldvalue)
 			end
 			item:trigger('on_clicked')

@@ -23,7 +23,7 @@
 local Item = {}
 Item.__index = Item
 
-function Item:new(form, parent, def, instance_id)
+function Item:new(form, parent, def)
 
 	-- Type checks
 	assert(type(def) == "table", 'Item definition must be a table.')
@@ -31,12 +31,8 @@ function Item:new(form, parent, def, instance_id)
 
 	-- Instanciation
 	local item = {
---		id = def.id,
-		instance_id = instance_id or '',
 		form = form,
 		def = def,
-		context = {},
---		widget = def.widget,
 		geometry = { x = 0, y = 0, w = 0, h = 0 },
 	}
 	setmetatable(item, self)
@@ -44,6 +40,9 @@ function Item:new(form, parent, def, instance_id)
 	if parent then
 		parent[#parent + 1] = item
 		item.parent = parent
+		item.context = nofs.new_context(item.parent:get_context())
+	else
+		item.context = nofs.new_context()
 	end
 
 	item:call('init')
@@ -52,7 +51,7 @@ function Item:new(form, parent, def, instance_id)
 end
 
 function Item:get_id()
-	return self.def.id..self.instance_id
+	return self.def.id
 end
 
 -- Method that launches functions :)
@@ -77,11 +76,6 @@ function Item:handle_field_event(fieldvalue, fieldname)
 	return self:call('handle_field_event', fieldvalue, fieldname)
 end
 
-function Item:set_context(data)
-	for key, value in pairs(data) do
-		self.context[key] = value
-	end
-end
 
 function Item:lay_out()
 	self.geometry.w = self.def.width or self.def.widget.width
@@ -109,13 +103,25 @@ function Item:render()
 	end
 end
 
-
---------------------------------------------------------------------------------
--- TODO:A REVOIR
-
-
 function Item:get_context()
 	return self.context
+end
+
+function Item:set_context(key, value, heritable)
+	if type(key) == 'table' and value == nil then
+		local heritable = value
+		for key, value in pairs(key) do
+			self.context[key] = value
+			if heritable then
+				self.context:set_heritable(key)
+			end
+		end
+	else
+		self.context[key] = value
+		if heritable then
+			self.context:set_heritable(key)
+		end
+	end
 end
 
 -- TODO:name ? get_contextual_attribute?
@@ -140,20 +146,11 @@ function Item:get_def_inherit(name)
 	end
 end
 
-
-
-function Item:get_value()
-	local context = self.form:get_context(self)
-	if context then
-		return context.value
-	end
-end
-
 function nofs.is_item(item)
 	local meta = getmetatable(item)
 	return meta and meta == Item
 end
 
-function nofs.new_item(form, parent, def, instance_id)
-	return Item:new(form, parent, def, instance_id)
+function nofs.new_item(form, parent, def)
+	return Item:new(form, parent, def)
 end

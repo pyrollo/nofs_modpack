@@ -28,6 +28,7 @@ dofile(nofs.path..'/widgets_registry.lua')
 dofile(nofs.path..'/widgets_containers.lua')
 dofile(nofs.path..'/widgets_basic.lua')
 dofile(nofs.path..'/widgets_composite.lua')
+dofile(nofs.path..'/context.lua')
 dofile(nofs.path..'/form.lua')
 dofile(nofs.path..'/item.lua')
 
