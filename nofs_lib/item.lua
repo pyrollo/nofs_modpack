@@ -23,6 +23,11 @@
 local Item = {}
 Item.__index = Item
 
+function nofs.is_item(item)
+	local meta = getmetatable(item)
+	return meta and meta == Item
+end
+
 function Item:new(form, parent, def)
 
 	-- Type checks
@@ -69,7 +74,7 @@ end
 
 -- Enqueue trigger in form trigger queue
 function Item:trigger(name, ...)
-	self.form:trigger(self, name, ...)
+	self.form:queue_trigger(self, name, ...)
 end
 
 function Item:handle_field_event(fieldvalue, fieldname)
@@ -133,22 +138,6 @@ function Item:get_attribute(name)
 		end
 	end
 	return self.def[name]
-end
-
--- TODO:name ?
-function Item:get_def_inherit(name)
-	if self.def[name] then
-		return self.def[name]
-	elseif self.def.widget.defaults and self.def.widget.defaults[name] then
-		return self.def.widget.defaults[name]
-	elseif self.parent then
-		return self.parent:get_def_inherit(name)
-	end
-end
-
-function nofs.is_item(item)
-	local meta = getmetatable(item)
-	return meta and meta == Item
 end
 
 function nofs.new_item(form, parent, def)

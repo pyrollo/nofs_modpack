@@ -41,7 +41,7 @@ local container_scrollbar_width = 0.5
 -- Sizing vbox and hbox and places child items inside
 local function lay_out_box(item)
 	local ix_pos_main, ix_pos_other, ix_size_main, ix_size_other
-	local spacing = item:get_def_inherit('spacing') or 0
+	local spacing = item.def:get_attribute('spacing') or 0
 
 	-- Process vbox and hbox the same way, just inverting coordinates
 	if item.def.widget.orientation == 'horizontal' then
@@ -167,7 +167,7 @@ nofs.register_widget("form", {
 			item.form:update()
 		end,
 	lay_out = function(item)
-			local margin = item:get_def_inherit('margin') or 0
+			local margin = item.def:get_attribute('margin') or 0
 			lay_out_box(item)
 			item.geometry = {
 				x = margin,

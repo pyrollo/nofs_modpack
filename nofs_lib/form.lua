@@ -19,90 +19,6 @@
 --]]
 
 --------------------------------------------------------------------------------
--- Private Form stuff
---------------------------------------------------------------------------------
-
-local function is_valid_id(id)
-	if type(id) ~= 'string' then
-		return false, 'Identifier must be a string.'
-	end
-	if id == "quit" then
-		return false, 'Cannot use "quit" as an item id, it is a reserved word.'
-	end
-	if id:sub(1,4) == "key_" then
-		return false, string.format(
-		 '"%s" is not a valid item id, item ids cannot start with "key_".', id)
-	end
-	if not id:match('^[A-Za-z0-9_:]+$') then
-		return false, string.format(
-			'"%s" is not a valid item id, item ids can contain only letters, number and "_".',
-			def.id)
-	end
-end
-
---- Check_def
--- Perform all checks that can be performed on form definition.
--- Add links to widget definitions
--- Collect ids and adds missing ids.
-
-local function check_def(def)
-	local function type_and_id_check(parent, def, ids)
-		-- Type validity
-		assert(def.type, 'Item definition must have a type.')
-		def.widget = nofs.get_widget(def.type)
-		assert(def.widget, string.format('Widget type "%s" unknown.', def.type))
-		assert(parent or def.widget.is_root == true,
-			string.format('Item type "%s" can not be root.', def.type))
-		if parent and def.widget.parent_type then
-			assert(def.widget.parent_type == parent.type,
-				string.format('Item type "%s" can have only "%s" parent no "%s" parent.',
-					def.type, def.widget.parent_type, parent.type))
-		end
-		if parent and parent.widget.children_type then
-			assert(def.widget.type == parent.widget.children_type,
-				string.format('Item type "%s" can have only "%s" children and no "%s" child.',
-					parent.type, def.widget.children_type, def.type))
-		end
-
-		-- ID validity
-		if def.id then
-			assert(type(def.id) == 'string', 'Identifiers must be strings.')
-			assert(def.id ~= "quit", 'Cannot use "quit" as an item id, it is a reserved word.')
-			assert(def.id:sub(1,4) ~= "key_", string.format(
-				'"%s" is not a valid item id, item ids cannot start with "key_".',
-				def.id))
-			assert(def.id:match('^[A-Za-z0-9_:]+$'), string.format(
-				'"%s" is not a valid item id, item ids can contain only letters, number and "_".',
-				def.id))
-			assert(not ids[def.id], string.format(
-				'"%s" id already in use in this form.', def.id))
-			ids[def.id] = def
-		end
-
-		for _, child in ipairs(def) do
-			type_and_id_check(def, child, ids)
-		end
-	end
-
-	local function add_missing_id(def, ids)
-		if def.id == nil then
-			local i = 1
-			while ids[def.type..i] do i = i + 1 end
-			def.id = def.type..i
-			ids[def.id] = def
-		end
-
-		for _, child in ipairs(def) do
-			add_missing_id(child, ids)
-		end
-	end
-
-	local ids = {}
-	type_and_id_check(nil, def, ids)
-	add_missing_id(def, ids)
-end
-
---------------------------------------------------------------------------------
 -- Form class
 --------------------------------------------------------------------------------
 
@@ -113,9 +29,10 @@ end
 local Form = {}
 Form.__index = Form
 
--- Fields overwritten in def:
--- - widget
--- - id (only if absent)
+function nofs.is_form(form)
+	local meta = getmetatable(form)
+	return meta and meta == Form
+end
 
 -- TODO:Il faudrait séparer Form en Form et FormInstance. Form un objet a créer une fois, et FormInstance à créer par joueur
 
@@ -125,10 +42,10 @@ function Form:new(player_name, def, context)
 	assert(player_name, "Player name must be specified.")
 
 	local new = {
-		def = table.copy(def),
+		def = nofs.new_formdef(def),
 		ids = {},            -- Elements by id
 		item = {},           -- Root item and descendants.
-		item_contexts = {},  -- Persistant item contexts
+		item_contexts = {}	,  -- Persistant item contexts
 		form_context = {},   -- Global form context
 		player_name = player_name,
 		trigger_queues = { [1] = {}, [2] = {}, }
@@ -153,18 +70,7 @@ end
 function Form:build_instance()
 
 	local function create_items(parent, def, instance_id)
-		local dataset = nil
-		if def.data then
-			if type(def.data) == "table" then
-				dataset = table.copy(def.data)
-			elseif type(def.data) == "function" then
-				dataset = table.copy(def.data(self))
-			else
-				assert(false, "data must be a table or a function")
-			end
-		else
-			dataset = {{}}
-		end
+		local dataset = def:get_instance_data(self)
 
 		assert(parent or #dataset == 1,
 			"Root form item must have exactly one instance")
@@ -249,7 +155,7 @@ end
 -- Priority in trigger execution, lower is first
 local trigger_queues = { on_clicked = 2,	default = 1, }
 
-function Form:trigger(item, name, ...)
+function Form:queue_trigger(item, name, ...)
 	local index = trigger_queues[name] or trigger_queues.default
 	if self.trigger_queues[index] == nil then
 		self.trigger_queues[index] = {}
@@ -420,11 +326,6 @@ end
 --------------------------------------------------------------------------------
 -- API functions
 --------------------------------------------------------------------------------
-
-function nofs.is_form(form)
-	local meta = getmetatable(form)
-	return meta and meta == Form
-end
 
 function nofs.show_form(player_name, def, context)
 	local form = Form:new(player_name, def, context)
