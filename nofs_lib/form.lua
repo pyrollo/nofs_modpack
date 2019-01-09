@@ -24,7 +24,6 @@
 
 -- TODO: Checks :
 -- item.def.max_items integer > 1
--- item.def.id should not start with '.' (reserved) ?
 
 local Form = {}
 Form.__index = Form
@@ -101,6 +100,23 @@ function Form:build_instance()
 
 -- ICI CA NE VA PAS. Il y a un problème de parenté si on prend un contexte ancien + un context nouveau
 -- Le lien de parenté devrait se faire par les ID toujours.
+
+--[[
+Pas de problème si les data ne changent pas. Si elle changent, on doit perdre le contexte associé.
+Il faudrait dans ce cas avoir sauvé l'ancenne valeur.
+On peut imaginer un form qui sauve tout le temps ou avant de récupérer les données.
+On peut imaginer une valeur contextuelle indiquant qu'il faut sauvegarder.
+On peut imaginer des champs avec "autosave"
+
+Le contexte c'est :
+- La valeur affichée (dépend des données, doit être sauvée)
+- Le label affiché (dépend des données)
+- L'index de départ (dépend du nombre de données, pourrait être recalculée)
+- La position d'une scrollbar (dépend du nombre de données, pourrait être recalculée)
+
+Sur le container comprenant des données, ajouter des méthodes fetch et save ?
+]]
+
 			if self.item_contexts[def.id] then
 				item.context = self.item_contexts
 			else
