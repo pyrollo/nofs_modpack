@@ -31,6 +31,11 @@
 
 local Context = {}
 
+function nofs.is_context(context)
+	local meta = getmetatable(context)
+	return meta and meta == Context
+end
+
 local private = {} -- This is a private index for private data (could be any value except nil)
 
 function Context:new(parent)
@@ -80,11 +85,6 @@ function Context:__newindex (key, value)
 	if value == nil and self[private].heritable[key] then
 		self[private].heritable[key] = nil
 	end
-end
-
-function nofs.is_context(context)
-	local meta = getmetatable(context)
-	return meta and meta == Context
 end
 
 -- Parent is the parent context in case of inheritance. Can be left nil

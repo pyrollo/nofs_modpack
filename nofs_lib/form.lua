@@ -37,8 +37,8 @@ end
 
 function Form:new(player_name, def, context)
 	assert(type(def) == "table", "Form definition must be a table.")
-
 	assert(player_name, "Player name must be specified.")
+	def.type = def.type or "form"
 
 	local new = {
 		def = nofs.new_formdef(def),
@@ -50,10 +50,6 @@ function Form:new(player_name, def, context)
 		trigger_queues = { [1] = {}, [2] = {}, }
 	}
 	setmetatable(new, self)
-
-	new.def.type = new.def.type or "form"
-
-	check_def(new.def)
 
 	if context then -- TODO:A REVOIR
 		new.form_context = table.copy(context)

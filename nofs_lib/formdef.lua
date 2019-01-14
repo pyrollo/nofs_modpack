@@ -24,19 +24,19 @@
 	- widget (on all elements)
 ]]
 
-local FormDef = {}
-FormDef.__index = FormDef
+local Formdef = {}
+Formdef.__index = Formdef
 
 function nofs.is_formdef(formdef)
 	local meta = getmetatable(formdef)
-	return meta and meta == FormDef
+	return meta and meta == Formdef
 end
 
 function nofs.new_formdef(def)
 	return Formdef:new(def)
 end
 
-function FormDef:new(def)
+function Formdef:new(def)
 	-- Collect IDs and check types
 	local function type_and_id_check(parent, def, ids)
 		-- Type validity
@@ -69,6 +69,7 @@ function FormDef:new(def)
 				'"%s" id already in use in this form.', def.id))
 			ids[def.id] = def
 		end
+		setmetatable(def, self)
 
 		for _, child in ipairs(def) do
 			type_and_id_check(def, child, ids)
@@ -87,19 +88,17 @@ function FormDef:new(def)
 		for _, child in ipairs(def) do
 			add_missing_id(child, ids)
 		end
-
-		setmetatable(def, self)
 	end
 
 	formdef = table.copy(def)
 	-- TODO: Is this gonna be used?
 	formdef.ids = {}
-	type_and_id_check(nil, def, formdef.ids)
-	add_missing_id(def, formdef.ids)
+	type_and_id_check(nil, formdef, formdef.ids)
+	add_missing_id(formdef, formdef.ids)
 	return formdef
 end
 
-FormDef:get_attribute(name)
+function Formdef:get_attribute(name)
 	if self[name] then
 		return self[name]
 	-- TODO: Is this gonna be used?
@@ -110,12 +109,12 @@ FormDef:get_attribute(name)
 	end
 end
 
-FormDef:get_instance_data(form)
+function Formdef:get_instance_data(form)
 	local dataset
 	if self.data then
 		if type(self.data) == "table" then
 			dataset = table.copy(self.data)
-		elseif type(def.data) == "function" then
+		elseif type(self.data) == "function" then
 			dataset = table.copy(self.data(form))
 		else
 			assert(false, "data must be a table or a function")
