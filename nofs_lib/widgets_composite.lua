@@ -18,13 +18,22 @@
 	along with signs.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
+-- PAGER
+--------
 
--- COMPOSITE : Faire un systeme avec multiples ids tous pointant sur le même item
+local function index_to_page(index, ix_per_page)
+	return math.floor((index - 1) / ix_per_page + 1)
+end
+
+local function page_to_index(page, ix_per_page)
+	return 1 + (page - 1) * ix_per_page
+end
 
 nofs.register_widget("pager", {
 	width = 3 * nofs.fs_field_height,
 	height = nofs.fs_field_height,
 	componants = { 'next', 'previous', 'label', 'mask' },
+	dynamic = { page = 1 },
 	handle_field_event = function(item, fieldvalue, fieldname)
 			local component = fieldname:match("[.]([^.]*)$")
 
@@ -59,7 +68,7 @@ nofs.register_widget("pager", {
 			if context.current_page ~= old_page then
 				if connected and connected.def.max_items then
 					connected:get_context().start_index =
-						1 + (context.current_page - 1) * connected.def.max_items
+						page_to_index(context.current_page, connected.def.max_items)
 				end
 				item.form:update()
 			end

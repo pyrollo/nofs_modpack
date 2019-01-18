@@ -129,15 +129,24 @@ function Item:set_context(key, value, heritable)
 	end
 end
 
--- TODO:name ? get_contextual_attribute?
+-- Attribute : can be inherited and / or dynamic
 function Item:get_attribute(name)
-	if self.id then
-		local context = self.form.item_contexts[self.id]
+	if self.widget.dynamic and self.widget.dynamic[name] then
+		local context = self:get_context()
 		if context and context[name] then
 			return context[name]
 		end
 	end
-	return self.def[name]
+	if self.def[name] then
+		return self.def[name]
+	end
+	if self.widget.heritable and self.widget.heritable[name] then
+		if parent then
+			return parent:get_attribute(name) or self.widget.heritable[name]
+		else
+			return self.widget.heritable[name]
+		end
+	end
 end
 
 function nofs.new_item(form, parent, def)

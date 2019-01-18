@@ -22,6 +22,20 @@ local function fsesc(text)
 	return minetest.formspec_escape(text or '')
 end
 
+local function save_to_meta(item, name)
+	local meta = item:get_attribute('meta')
+	if meta then
+		item.form:set_meta(meta, item:get_attribute(name))
+	end
+end
+
+local function load_from_meta(item, name)
+	local meta = item:get_attribute('meta')
+	if meta then
+		item:set_context(name, item.form:get_meta(meta))
+	end
+end
+
 -- BASIC WIDGETS
 ----------------
 
@@ -40,6 +54,7 @@ nofs.register_widget("scrollbar", {
 	-- Main one is that if form is refreshed while dragging the scrollbar cursor
 	-- then mouse looses the cursor. Have to temporize before actually refresh the
 	-- form
+	dynamic = { value = 0 },
 	handle_field_event = function(item, field)
 		local event = minetest.explode_scrollbar_event(field)
 		local context = item:get_context()
@@ -96,6 +111,7 @@ nofs.register_widget("scrollbar", {
 
 nofs.register_widget("label", {
 	height = nofs.fs_field_height,
+	dynamic = { label = "" },
 	render = function(item)
 			-- Use of textarea is much better than label as text is actually
 			-- limited to the giver area and label can be multiline
@@ -110,6 +126,7 @@ nofs.register_widget("label", {
 nofs.register_widget("button", {
 	height = nofs.fs_field_height,
 	width = 2,
+	dynamic = { label = "", item = "", image = "" },
 	init = function(item)
 			if item:get_attribute('item') and item:get_attribute('image') then
 				minetest.log('warning',
@@ -124,7 +141,7 @@ nofs.register_widget("button", {
 			local a_item = item:get_attribute('item')
 			local a_image = item:get_attribute('image')
 
-			if a_item then
+			if a_item ~= "" then
 				return nofs.fs_element_string('item_image_button',
 					item.geometry, fsesc(a_item), item:get_id(),
 					fsesc(item:get_attribute('label')))
@@ -149,11 +166,9 @@ nofs.register_widget("button", {
 nofs.register_widget("field", {
 	height = nofs.fs_field_height,
 	width = 2,
+	dynamic = { value = "", label = "" },
 	init = function(item)
-		local context = item:get_context()
-		if item.def.meta then
-			context.value = context.value or item.form:get_meta(item.def.meta)
-		end
+		load_from_meta(item, 'value')
 	end,
 	handle_field_event = function(item, field)
 		local context = item:get_context()
@@ -174,10 +189,7 @@ nofs.register_widget("field", {
 		end
 	end,
 	save = function(item)
-		-- Save to meta
-		if item.def.meta then
-			item.form:set_meta(item.def.meta, item:get_context().value)
-		end
+		save_to_meta(item, 'value')
 	end,
 })
 
@@ -195,17 +207,15 @@ nofs.register_widget("field", {
 nofs.register_widget("textarea", {
 	height = 3,
 	width = 3,
+	dynamic = { value = "", label = "" },
 	init = function(item)
-		local context = item:get_context()
-		if item.def.meta then
-			context.value = context.value or item.form:get_meta(item.def.meta)
-		end
+		load_from_meta(item, 'value')
 	end,
 	handle_field_event = function(item, field)
 		local context = item:get_context()
-		local oldvalue = context.value or ''
-		context.value = field
-		if context.value ~= oldvalue then
+		local oldvalue = item:get_attribute('value') or ''
+		if oldvalue ~= field then
+			item:set_context('value', field)
 			item:trigger('on_changed', oldvalue)
 		end
 	end,
@@ -215,10 +225,7 @@ nofs.register_widget("textarea", {
 			fsesc(item:get_attribute('value')))
 	end,
 	save = function(item)
-		-- Save to meta
-		if item.def.meta then
-			item.form:set_meta(item.def.meta, item:get_context().value)
-		end
+		save_to_meta(item, 'value')
 	end,
 })
 
@@ -234,17 +241,14 @@ nofs.register_widget("textarea", {
 --  value: value of the checkbox
 
 nofs.register_widget("checkbox", {
+	dynamic = { value = false, label = "" },
 	init = function(item)
-			local context = item:get_contect()
-			if item.def.meta then
-				context.value = context.value or item.form:get_meta(item.def.meta)
-			end
-		end,
+			load_from_meta(item, 'value')
+		end
 	handle_field_event = function(item, field)
-			local context = item:get_context()
-			local oldvalue = context.value
-			if context.value ~= field then
-				context.value = field
+			local oldvalue = item:get_attribute('value')
+			if oldvalue ~= field then
+				item:set_attribute('value', field)
 				item:trigger('on_changed', oldvalue)
 			end
 			item:trigger('on_clicked')
@@ -256,7 +260,6 @@ nofs.register_widget("checkbox", {
 				item:get_attribute('value') == "true" and "true" or "false")
 		end,
 })
-
 
 -- Inventory
 -- =========

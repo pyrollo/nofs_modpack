@@ -110,8 +110,8 @@ local function render_container(item)
 
 	local fs = ""
 	for index, child in ipairs(item) do
-		if item.def.max_items and
-			(index < start_index or index >= start_index + item.def.max_items)
+		local max_items = item:get_attribute('max_items')
+		if max_items and (index < start_index or index >= start_index + max_items)
 		then
 			overflow = true
 		else
@@ -121,8 +121,7 @@ local function render_container(item)
 
 	item:get_context().max_index = #item
 
-	if overflow and item.def.overflow and item.def.overflow == 'scrollbar'
-	then
+	if overflow and item:get_attribute('overflow') == 'scrollbar' then
 
 -- TODO: Revoir ça, car il faut que l'id de la scrollbar soit unique et déclaré niveau form.
 -- Il faut peut être passer par une méthode côté form?
@@ -159,6 +158,7 @@ end
 nofs.register_widget("form", {
 	is_root = true,
 	orientation = 'vertical',
+	inherit = { margin = 0, spacing = 0, valign="middle", halign="center" },
 	handle_field_event = function(item, field)
 			-- Only event corresponding to form is tab event
 			if tonumber(field) then
@@ -200,12 +200,14 @@ nofs.register_widget("form", {
 
 nofs.register_widget("vbox", {
 	orientation = 'vertical',
+	inherit = { margin = 0, spacing = 0, valign="middle", halign="center" },
 	lay_out = lay_out_box,
 	render = render_container,
 })
 
 nofs.register_widget("hbox", {
 	orientation = 'horizontal',
+	inherit = { margin = 0, spacing = 0, valign="middle", halign="center" },
 	lay_out = lay_out_box,
 	render = render_container,
 })
@@ -217,6 +219,7 @@ nofs.register_widget("tab", {
 	parent_type = 'form',
 	overlapping = true,
 	orientation = 'vertical',
+	inherit = { margin = 0, spacing = 0, valign="middle", halign="center" },
 	init = function(item)
 			item.parent.tabs = item.parent.tabs or {}
 			item.parent.tabs[#item.parent.tabs+1] = item
