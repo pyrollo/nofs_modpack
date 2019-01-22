@@ -45,9 +45,6 @@ function Item:new(form, parent, def)
 	if parent then
 		parent[#parent + 1] = item
 		item.parent = parent
-		item.context = nofs.new_context(item.parent:get_context())
-	else
-		item.context = nofs.new_context()
 	end
 
 	item:call('init')
@@ -108,30 +105,35 @@ function Item:render()
 	end
 end
 
-function Item:get_context()
-	return self.context
+function Item:get_context(key)
+	local context = self.form:get_context(self)
+	if key and context then
+		return context[key]
+	else
+		return context
+	end
 end
 
-function Item:set_context(key, value, heritable)
-	if type(key) == 'table' and value == nil then
-		local heritable = value
-		for key, value in pairs(key) do
-			self.context[key] = value
-			if heritable then
-				self.context:set_heritable(key)
-			end
-		end
-	else
-		self.context[key] = value
-		if heritable then
-			self.context:set_heritable(key)
-		end
+function Item:set_context(key, value)
+	local context = self:get_context()
+	context[key] = value
+end
+
+function Item:get_data(key)
+	local context = self:get_context()
+	if context.data and context.data[key] then
+		return context.data[key]
+	end
+	if self.parent then
+		return self.parent:get_data(key)
 	end
 end
 
 -- Attribute : can be inherited and / or dynamic
 function Item:get_attribute(name)
-	if self.widget.dynamic and self.widget.dynamic[name] then
+	local dynamic = self.def.widget.dynamic
+		and self.def.widget.dynamic[name] ~= nil
+	if dynamic then
 		local context = self:get_context()
 		if context and context[name] then
 			return context[name]
@@ -140,12 +142,15 @@ function Item:get_attribute(name)
 	if self.def[name] then
 		return self.def[name]
 	end
-	if self.widget.heritable and self.widget.heritable[name] then
+	if self.def.widget.heritable and self.def.widget.heritable[name] ~= nil then
 		if parent then
-			return parent:get_attribute(name) or self.widget.heritable[name]
+			return parent:get_attribute(name) or self.def.widget.heritable[name]
 		else
-			return self.widget.heritable[name]
+			return self.def.widget.heritable[name]
 		end
+	end
+	if dynamic then
+		return self.def.widget.dynamic[name]
 	end
 end
 

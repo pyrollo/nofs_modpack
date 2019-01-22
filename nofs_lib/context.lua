@@ -29,6 +29,8 @@
 -- set_protected() --> inherits protected
 -- get()
 
+-- PROBABLEMENT INUTILE MAINTENANT !
+
 local Context = {}
 
 function nofs.is_context(context)

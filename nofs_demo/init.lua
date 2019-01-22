@@ -94,7 +94,7 @@ local inspector_form = {
 				{ type = 'field', width = 4,
 					save = function(item)
 						local meta = minetest.get_meta(item.form:get_context().pos)
-						meta:set_string(item:get_context().key, item:get_context().key)
+						meta:set_string(item:get_context('key'), item:get_context('key'))
 					end,
 				},
 				{ type = 'button', width = 1, label="...",

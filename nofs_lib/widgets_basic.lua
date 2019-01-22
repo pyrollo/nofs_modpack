@@ -36,75 +36,15 @@ local function load_from_meta(item, name)
 	end
 end
 
+local function load_from_data(item, name)
+	local data = item:get_attribute('data')
+	if data then
+		item:set_context(name, item:get_data(data))
+	end
+end
+
 -- BASIC WIDGETS
 ----------------
-
-local function scrollbar_get_index(value, min, max)
-	return math.floor(value / 1000 * (max-min)) + min
-end
-local function scrollbar_get_value(index, min, max)
-	return math.floor(1000 * (index-min) / ((max-min) or 1 ))
-end
-
--- scrollbar
--- =========
-
-nofs.register_widget("scrollbar", {
-	-- This is a bit complex. Default scrollbar management have big issues.
-	-- Main one is that if form is refreshed while dragging the scrollbar cursor
-	-- then mouse looses the cursor. Have to temporize before actually refresh the
-	-- form
-	dynamic = { value = 0 },
-	handle_field_event = function(item, field)
-		local event = minetest.explode_scrollbar_event(field)
-		local context = item:get_context()
-		if event.type == 'CHG' then
-			event.increase = event.value > (context.value or 0)
-			event.decrease = event.value < (context.value or 0)
-			context.value = event.value
-			if item.def.connected_to then
-				local connected =
-					item.form:get_element_by_id(item.def.connected_to)
-				if connected.def.max_items then
-					-- TODO manage the case when max_index does not exist
-					local max_index = connected:get_context().max_index
-						- connected.def.max_items + 1
-
-					local start_index = 1
-					if max_index > 1 then
-						start_index = scrollbar_get_index(event.value, 1, max_index)
-						-- If index unchanged, force to go to next index
-						-- according to direction
-						if start_index == (connected:get_context().start_index or 1)
-						then
-							if event.increase and start_index < max_index then
-								start_index = start_index + 1
-							end
-							if event.decrease and start_index > 1 then
-								start_index = start_index - 1
-							end
-						end
-					end
-					connected:get_context().start_index = start_index
-					context.value = scrollbar_get_value(start_index, 1, max_index)
-					context.update = (context.update or 0) + 1
-					minetest.after(0.1, function()
-						context.update = context.update - 1
-						if context.update == 0 then
-							item.form:refresh()
-						end
-					end)
-				end
-			end
-		end
-	end,
-	render = function(item)
-		return nofs.fs_element_string('scrollbar',
-			item.geometry,
-			item.def.orientation or "vertical",
-			item:get_id(), fsesc(item:get_attribute("value") or 0))
-	end,
-})
 
 -- label
 -- =====
@@ -171,10 +111,9 @@ nofs.register_widget("field", {
 		load_from_meta(item, 'value')
 	end,
 	handle_field_event = function(item, field)
-		local context = item:get_context()
-		local oldvalue = context.value or ''
-		context.value = field
-		if context.value ~= oldvalue then
+		local oldvalue = item:get_attribute('value')
+		item:set_context('value', field)
+		if oldvalue ~= field then
 			item:trigger('on_changed', oldvalue)
 		end
 	end,
@@ -212,10 +151,9 @@ nofs.register_widget("textarea", {
 		load_from_meta(item, 'value')
 	end,
 	handle_field_event = function(item, field)
-		local context = item:get_context()
-		local oldvalue = item:get_attribute('value') or ''
+		local oldvalue = item:get_attribute('value')
+		item:set_context('value', field)
 		if oldvalue ~= field then
-			item:set_context('value', field)
 			item:trigger('on_changed', oldvalue)
 		end
 	end,
@@ -244,11 +182,11 @@ nofs.register_widget("checkbox", {
 	dynamic = { value = false, label = "" },
 	init = function(item)
 			load_from_meta(item, 'value')
-		end
+		end,
 	handle_field_event = function(item, field)
 			local oldvalue = item:get_attribute('value')
+			item:set_context('value', field == 'true')
 			if oldvalue ~= field then
-				item:set_attribute('value', field)
 				item:trigger('on_changed', oldvalue)
 			end
 			item:trigger('on_clicked')
@@ -257,7 +195,7 @@ nofs.register_widget("checkbox", {
 			return nofs.fs_element_string('checkbox',
 				item.geometry, item:get_id(),
 				fsesc(item:get_attribute('label')),
-				item:get_attribute('value') == "true" and "true" or "false")
+				item:get_attribute('value') and "true" or "false")
 		end,
 })
 
@@ -271,11 +209,12 @@ nofs.register_widget("checkbox", {
 --	- start_index
 
 nofs.register_widget("inventory", {
+	dynamic = { start_index = 1 },
 	render = function(item, offset)
 			return nofs.fs_element_string('list', item.geometry,
 				-- TODO : link node inventory to form's node
 				item:get_attribute('location') or "",
 				item:get_attribute('list') or "",
-				item:get_context().start_item or "")
+				item:get_attribute('start_index') or "")
 		end,
 })

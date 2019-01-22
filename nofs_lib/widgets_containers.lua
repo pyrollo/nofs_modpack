@@ -103,14 +103,18 @@ end
 -- Containers generic rendering
 --
 local function render_container(item)
-
-	local start_index = item:get_context().start_index or 1
-
 	local overflow = false
+	local start_index = item:get_context('start_index') or 1
+	local max_items = item:get_attribute('max_items')
+	local max_index = 1
+	if max_items then
+		max_index = math.max(#item - max_items, 1)
+	end
+	item:set_context('min_index', 1)
+	item:set_context('max_index', max_index)
 
 	local fs = ""
 	for index, child in ipairs(item) do
-		local max_items = item:get_attribute('max_items')
 		if max_items and (index < start_index or index >= start_index + max_items)
 		then
 			overflow = true
@@ -119,20 +123,18 @@ local function render_container(item)
 		end
 	end
 
-	item:get_context().max_index = #item
-
 	if overflow and item:get_attribute('overflow') == 'scrollbar' then
 
 -- TODO: Revoir ça, car il faut que l'id de la scrollbar soit unique et déclaré niveau form.
 -- Il faut peut être passer par une méthode côté form?
 -- Ensuite connected_to doit prendre le def.ID et s'arranger avec l'instance
---[[
-		local scrollbar = nofs.new_item(item, {
-				id = item:get_id()..'.scrollbar',
-				type = 'scrollbar',
-				orientation = item.def.widget.orientation,
-				connected_to = item.def.id,
-			})
+	local scrollbar = nofs.new_item(item.form, item, {
+			id = item:get_id()..'.scrollbar',
+			type = 'scrollbar',
+			widget = nofs.get_widget('scrollbar'),
+			orientation = item.def.widget.orientation,
+			connected_to = item:get_id(),
+		})
 
 		if item.def.orientation == 'horizontal' then
 			scrollbar.geometry = {
@@ -146,7 +148,6 @@ local function render_container(item)
 				w = container_scrollbar_width, h = item.geometry.h }
 		end
 		fs = fs..scrollbar:render()
-		]]
 	end
 
 	return fs

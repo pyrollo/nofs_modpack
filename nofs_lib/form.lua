@@ -67,9 +67,6 @@ function Form:build_instance()
 	local function create_items(parent, def, instance_id)
 		local dataset = def:get_instance_data(self)
 
-		assert(parent or #dataset == 1,
-			"Root form item must have exactly one instance")
-
 		local id = def.id
 		for index, data in ipairs(dataset) do
 			local instance_id = instance_id or ''
@@ -90,46 +87,26 @@ function Form:build_instance()
 				self.ids[def.id] = item
 			end
 
-			if parent == nil then
+			-- Set root item
+			if not parent then
+				assert(self.item, "Cannot have multiple instances of root item")
 				self.item = item
 			end
 
--- ICI CA NE VA PAS. Il y a un problème de parenté si on prend un contexte ancien + un context nouveau
--- Le lien de parenté devrait se faire par les ID toujours.
-
---[[
-Pas de problème si les data ne changent pas. Si elle changent, on doit perdre le contexte associé.
-Il faudrait dans ce cas avoir sauvé l'ancenne valeur.
-On peut imaginer un form qui sauve tout le temps ou avant de récupérer les données.
-On peut imaginer une valeur contextuelle indiquant qu'il faut sauvegarder.
-On peut imaginer des champs avec "autosave"
-
-Le contexte c'est :
-- La valeur affichée (dépend des données, doit être sauvée)
-- Le label affiché (dépend des données)
-- L'index de départ (dépend du nombre de données, pourrait être recalculée)
-- La position d'une scrollbar (dépend du nombre de données, pourrait être recalculée)
-
-Sur le container comprenant des données, ajouter des méthodes fetch et save ?
-]]
-
-			if self.item_contexts[def.id] then
-				item.context = self.item_contexts
-			else
-				self.item_contexts[def.id] = item.context
-			end
-
-			item:set_context(data, true)
+			item:set_context('data', data)
 
 			for _, childdef in ipairs(def) do
 				create_items(item, childdef, instance_id)
 			end
 		end
+
+		-- Restore def.id
 		def.id = id
 	end
 
 	self.ids = {}
 	create_items(nil, self.def, '')
+	assert(self.item, "Form must have one instance of root item")
 end
 
 function Form:render()
@@ -243,8 +220,16 @@ function Form:set_meta(meta, value)
 end
 
 -- Ensure persistance of item contexts
-function Form:get_context()
-	return self.form_context
+function Form:get_context(item)
+	if item == nil then
+		return self.form_context
+	end
+	assert(nofs.is_item(item), 'First argument expected to be an Item')
+
+	if self.item_contexts[item:get_id()] == nil then
+		self.item_contexts[item:get_id()] = {}
+	end
+	return self.item_contexts[item:get_id()]
 end
 
 function Form:update()
@@ -303,7 +288,7 @@ function Form:refresh()
 			'[nofs] Form:refresh called while form not on top for player "%s".',
 			self.player_name))
 	else
-		local fs = self:render(player_name)
+		local fs = self:render()
 		minetest.show_formspec(self.player_name, self.name, fs)
 		-- Redisplay the form 0.1 s after to ensure form is displayed (sometimes
 		-- displaying a form right after closing one does not work).

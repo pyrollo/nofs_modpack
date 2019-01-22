@@ -90,7 +90,7 @@ function Formdef:new(def)
 		end
 	end
 
-	formdef = table.copy(def)
+	local formdef = table.copy(def)
 	-- TODO: Is this gonna be used?
 	formdef.ids = {}
 	type_and_id_check(nil, formdef, formdef.ids)
