@@ -34,7 +34,7 @@ All fields are optional.
   * `is_root`: `true` if this widget can be a form root (default `false`)
   * `parent_type`: If set, ensure that the parent widget is of this type.
   * `children_type`: If set, ensure that all child widgets are of this type.
-  * `orientation`: For some containers, defines how children are laid out.
+  * `layout`: For some containers, defines how children are laid out.
   * `overlapping`: If `true`, indicates that the widgets overlaps other items. For example for "tab" widgets (Default : `false`).
 
 ### Callbacks
@@ -67,7 +67,7 @@ instance
 ## form
 The form itself. Must be the root element for each form.
   * `margin`: Margin around content (default 0)
-  * `orientation`: Defines how children are laid out. Can be "vertical" or "horizontal" (default "vertical").
+  * `layout`: Defines how children are laid out. Can be "vertical" or "horizontal" (default "vertical").
 
 ## vbox and hbox
 Containers holding vertically or horizontally stacked children.
@@ -80,7 +80,7 @@ Containers holding vertically or horizontally stacked children.
 ## tab
 A tab page in a form (not allowed in other items).
   * `label`: Tab page label.
-  * `orientation`: Defines how children are laid out. Can be "vertical" or "horizontal" (default "vertical").
+  * `layout`: Defines how children are laid out. Can be "vertical" or "horizontal" (default "vertical").
   * `spacing` (inherits): Spacing between child elements (default 0).
   * `valign`: Vertical alignment ("top", "middle", "bottom". Default "middle").
   * `halign`: Horizontal alignment ("left", "center", "right". Default "center").

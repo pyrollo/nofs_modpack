@@ -44,7 +44,7 @@ local function lay_out_box(item)
 	local spacing = item.def:get_attribute('spacing') or 0
 
 	-- Process vbox and hbox the same way, just inverting coordinates
-	if item.def.widget.orientation == 'horizontal' then
+	if item.def.widget.layout == 'horizontal' then
 		ix_pos_main, ix_pos_other, ix_size_main, ix_size_other = 'x', 'y', 'w', 'h'
 	else
 		ix_pos_main, ix_pos_other, ix_size_main, ix_size_other = 'y', 'x', 'h', 'w'
@@ -132,11 +132,11 @@ local function render_container(item)
 			id = item:get_id()..'.scrollbar',
 			type = 'scrollbar',
 			widget = nofs.get_widget('scrollbar'),
-			orientation = item.def.widget.orientation,
+			layout = item.def.widget.layout,
 			connected_to = item:get_id(),
 		})
 
-		if item.def.orientation == 'horizontal' then
+		if item.def.layout == 'horizontal' then
 			scrollbar.geometry = {
 				x = item.geometry.x,
 				y = item.geometry.y + item.geometry.h - container_scrollbar_width,
@@ -158,7 +158,7 @@ end
 
 nofs.register_widget("form", {
 	is_root = true,
-	orientation = 'vertical',
+	layout = 'vertical',
 	inherit = { margin = 0, spacing = 0, valign="middle", halign="center" },
 	handle_field_event = function(item, field)
 			-- Only event corresponding to form is tab event
@@ -200,14 +200,14 @@ nofs.register_widget("form", {
 })
 
 nofs.register_widget("vbox", {
-	orientation = 'vertical',
+	layout = 'vertical',
 	inherit = { margin = 0, spacing = 0, valign="middle", halign="center" },
 	lay_out = lay_out_box,
 	render = render_container,
 })
 
 nofs.register_widget("hbox", {
-	orientation = 'horizontal',
+	layout = 'horizontal',
 	inherit = { margin = 0, spacing = 0, valign="middle", halign="center" },
 	lay_out = lay_out_box,
 	render = render_container,
@@ -219,7 +219,7 @@ nofs.register_widget("hbox", {
 nofs.register_widget("tab", {
 	parent_type = 'form',
 	overlapping = true,
-	orientation = 'vertical',
+	layout = 'vertical',
 	inherit = { margin = 0, spacing = 0, valign="middle", halign="center" },
 	init = function(item)
 			item.parent.tabs = item.parent.tabs or {}

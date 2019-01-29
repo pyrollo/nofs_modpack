@@ -63,11 +63,11 @@ local inspector_form = {
 		end,
 		-- TODO: Creer un raccourci pour cette operation repetitive qui va être courrante
 		-- Ajouter un champ "context" pour lier le label au context ou un "${title}" comme valeur ?
-		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item:get_context().title end },
-		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item:get_context().param1 end },
-		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item:get_context().param2 end },
+		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item:get_data('title') end },
+		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item:get_data('param1') end },
+		{ type = 'label', height = 1, width = 6, init = function(item) item:get_context().label = item:get_data('param2') end },
 	},
-	{ type = 'tab', label = 'meta', orientation = 'vertical',
+	{ type = 'tab', label = 'meta', layout = 'vertical',
 		{ type = 'label', height = 1, width = 6, label = "Metadata:" },
 		{ type = 'vbox',
 			max_items = 3,
@@ -88,13 +88,16 @@ local inspector_form = {
 					end,
 				{ type = 'label', width = 2,
 					init = function(item)
-						item:get_context().label = item:get_context().key
-					end,
+							item:get_context().label = item:get_data('key')
+						end,
 				},
 				{ type = 'field', width = 4,
+					init = function(item)
+							item:get_context().value = item:get_data('value')
+						end,
 					save = function(item)
 						local meta = minetest.get_meta(item.form:get_context().pos)
-						meta:set_string(item:get_context('key'), item:get_context('key'))
+						meta:set_string(item:get_data('key'), item:get_context('value'))
 					end,
 				},
 				{ type = 'button', width = 1, label="...",
@@ -104,9 +107,9 @@ local inspector_form = {
 								spacing = 0.5,
 								margin = 0.7,
 								{ type = 'label', width = 5,
-									init = function(item) item:get_context().label = item.form:get_context().title end },
+									init = function(item) item:get_context().label = item:get_data('title') end },
 								{ type = 'textarea', width = 5, height = 5,
-									init = function(item) item:get_context().value = item.form:get_context().value end,
+									init = function(item) item:get_context().value = item:get_data('value') end,
 									save = function(item) minetest.get_meta(item.form:get_context().pos, item.form:get_context().key, item.form:get_context().value) end,
 								},
 								{ type = 'hbox',

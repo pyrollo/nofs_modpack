@@ -66,7 +66,6 @@ function Form:build_instance()
 
 	local function create_items(parent, def, instance_id)
 		local dataset = def:get_instance_data(self)
-
 		local id = def.id
 		for index, data in ipairs(dataset) do
 			local instance_id = instance_id or ''
