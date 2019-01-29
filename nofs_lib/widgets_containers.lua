@@ -128,7 +128,8 @@ local function render_container(item)
 -- TODO: Revoir ça, car il faut que l'id de la scrollbar soit unique et déclaré niveau form.
 -- Il faut peut être passer par une méthode côté form?
 -- Ensuite connected_to doit prendre le def.ID et s'arranger avec l'instance
-	local scrollbar = nofs.new_item(item.form, item, {
+	local scrollbar = nofs.new_item(item.form, item, item:get_id()..'.scrollbar',
+	 {
 			id = item:get_id()..'.scrollbar',
 			type = 'scrollbar',
 			widget = nofs.get_widget('scrollbar'),

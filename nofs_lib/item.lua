@@ -28,7 +28,7 @@ function nofs.is_item(item)
 	return meta and meta == Item
 end
 
-function Item:new(form, parent, def)
+function Item:new(form, parent, id, def)
 
 	-- Type checks
 	assert(type(def) == "table", 'Item definition must be a table.')
@@ -36,6 +36,7 @@ function Item:new(form, parent, def)
 
 	-- Instanciation
 	local item = {
+		id = id,
 		form = form,
 		def = def,
 		geometry = { x = 0, y = 0, w = 0, h = 0 },
@@ -53,7 +54,7 @@ function Item:new(form, parent, def)
 end
 
 function Item:get_id()
-	return self.def.id
+	return self.id
 end
 
 -- Method that launches functions :)
@@ -154,6 +155,6 @@ function Item:get_attribute(name)
 	end
 end
 
-function nofs.new_item(form, parent, def)
-	return Item:new(form, parent, def)
+function nofs.new_item(form, parent, id, def)
+	return Item:new(form, parent, id, def)
 end

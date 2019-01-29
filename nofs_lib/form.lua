@@ -73,17 +73,15 @@ function Form:build_instance()
 				instance_id = instance_id.."."..index
 			end
 
-			-- TODO: Instance id management is a bit hacky
-			def.id = id..instance_id
-			local item = nofs.new_item(self, parent, def)
+			local item = nofs.new_item(self, parent, id..instance_id, def)
 
 			-- If composite widget, register item several times
 			if def.widget.componants then
 				for _, componant in ipairs(def.widget.componants) do
-					self.ids[def.id..'.'..componant] = item
+					self.ids[item:get_id()..'.'..componant] = item
 				end
 			else
-				self.ids[def.id] = item
+				self.ids[item:get_id()] = item
 			end
 
 			-- Set root item
@@ -99,8 +97,6 @@ function Form:build_instance()
 			end
 		end
 
-		-- Restore def.id
-		def.id = id
 	end
 
 	self.ids = {}
