@@ -58,49 +58,45 @@ function Form:new(player_name, def, context)
 	return new
 end
 
--- C'est ici qu'on peut vérifier le cas statique pour lequel on n'a pas le droit à
--- - data
--- - autre champs ?
+function Form:new_item_instance(parent, id, def)
+	local item = nofs.new_item(self, parent, id, def)
+	self.ids[item.id] = item
+	if def.widget.componants then
+		for _, componant in ipairs(def.widget.componants) do
+			self.ids[item.id..'.'..componant] = item
+		end
+	end
+end
 
-function Form:build_instance()
-
-	local function create_items(parent, def, instance_id)
-		local dataset = def:get_instance_data(self)
-		local id = def.id
-		for index, data in ipairs(dataset) do
-			local instance_id = instance_id or ''
-			if #dataset > 1 then
-				instance_id = instance_id.."."..index
-			end
-
-			local item = nofs.new_item(self, parent, id..instance_id, def)
-
-			-- If composite widget, register item several times
-			if def.widget.componants then
-				for _, componant in ipairs(def.widget.componants) do
-					self.ids[item:get_id()..'.'..componant] = item
-				end
-			else
-				self.ids[item:get_id()] = item
-			end
-
-			-- Set root item
-			if not parent then
-				assert(self.item, "Cannot have multiple instances of root item")
-				self.item = item
-			end
-
-			item:set_context('data', data)
-
-			for _, childdef in ipairs(def) do
-				create_items(item, childdef, instance_id)
-			end
+function Form:new_item(parent, def, instance_id)
+	local dataset = def:get_instance_data(self)
+	local id = def.id
+	local items = {}
+	for index, data in ipairs(dataset) do
+		local instance_id = instance_id or ''
+		if #dataset > 1 then
+			instance_id = instance_id.."."..index
 		end
 
-	end
+		local item = nofs.new_item(self, parent, id..instance_id, def)
 
+		-- Set root item
+		if not parent then
+			assert(self.item, "Cannot have multiple instances of root item")
+			self.item = item
+		end
+
+		item:set_context('data', data)
+
+		for _, childdef in ipairs(def) do
+			self:new_item(item, childdef, instance_id)
+		end
+	end
+end
+
+function Form:build_instance()
 	self.ids = {}
-	create_items(nil, self.def, '')
+	self:new_item(nil, self.def, '')
 	assert(self.item, "Form must have one instance of root item")
 end
 
@@ -221,10 +217,10 @@ function Form:get_context(item)
 	end
 	assert(nofs.is_item(item), 'First argument expected to be an Item')
 
-	if self.item_contexts[item:get_id()] == nil then
-		self.item_contexts[item:get_id()] = {}
+	if self.item_contexts[item.id] == nil then
+		self.item_contexts[item.id] = {}
 	end
-	return self.item_contexts[item:get_id()]
+	return self.item_contexts[item.id]
 end
 
 function Form:update()
@@ -239,7 +235,7 @@ function Form:receive(fields)
 			if not item or not item.def.widget.handle_field_event then
 				minetest.log('warning',
 					string.format('[nofs] Unwanted field "%s" for form "%s".',
-						key, self.item:get_id()))
+						key, self.item.id))
 				suspicious = true
 			end
 		end

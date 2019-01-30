@@ -42,21 +42,19 @@ nofs.register_widget("scrollbar", {
 	dynamic = { value = 0 },
 	handle_field_event = function(item, field)
 		local event = minetest.explode_scrollbar_event(field)
-
 		if event.type == 'CHG' then
 			local value = item:get_context('value')
 			event.increase = event.value > (value or 0)
 			event.decrease = event.value < (value or 0)
 			local connected =
 				item.form:get_element_by_id(item.def.connected_to)
-
 			local min_index, max_index
 			if connected then
 				min_index = connected:get_context('min_index') or 1
 				max_index = connected:get_context('max_index') or 1
 
-				if max_index - min_index > 1 then
-					local index = scrollbar_get_index(event.value, min_index, max_index)
+				if max_index - min_index > 0 then
+					local index = value_to_index(event.value, min_index, max_index, 1000)
 
 					-- If index unchanged, force to go to next index
 					-- according to direction
@@ -69,16 +67,18 @@ nofs.register_widget("scrollbar", {
 							index = index - 1
 						end
 					end
+
 					connected:set_context('start_index', index)
 					event.value =	index_to_value(index, min_index, max_index, 1000)
 				end
 			end
 
 			item:set_context('value', event.value)
-			item:set_context('update ', (item:get_context('update') or 0) + 1)
+			item:set_context('update', (item:get_context('update') or 0) + 1)
+
 			minetest.after(0.1, function()
-				item:set_context('update',  get_context('update') - 1)
-				if get_context('update').update == 0 then
+				item:set_context('update',  item:get_context('update') - 1)
+				if item:get_context('update') == 0 then
 					item.form:refresh()
 				end
 			end)
@@ -99,7 +99,7 @@ nofs.register_widget("scrollbar", {
 		end
 
 		return nofs.fs_element_string('scrollbar',
-			item.geometry, item.def.orientation or "vertical",	item:get_id(), value)
+			item.geometry, item.def.orientation or "vertical", item.id, value)
 	end,
 })
 
@@ -120,10 +120,11 @@ end
 
 local function get_page_vars(item, connected)
 	if connected then
+		local min_index = connected:get_context('min_index') or 1
+		local max_index = connected:get_context('max_index') or 1
+		local step_index = connected:get_attribute('max_items') or 1
 		return
-			connected:get_context('min_index') or 1,
-			connected:get_context('max_index') or 1,
-			connected:get_attribute('max_items') or 1,
+			min_index, max_index, step_index,
 			index_to_page(connected:get_context('start_index') or 1,
 			min_index, step_index),
 			nb_of_pages(min_index, max_index, step_index)
@@ -168,6 +169,7 @@ nofs.register_widget("pager", {
 	render = function(item)
 		local connected = item.def.connected_to and
 			item.form:get_element_by_id(item.def.connected_to)
+
 		local min_index, max_index, step_index, page, max_page =
 			get_page_vars(item, connected)
 

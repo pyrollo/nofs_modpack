@@ -33,6 +33,10 @@ function Item:new(form, parent, id, def)
 	-- Type checks
 	assert(type(def) == "table", 'Item definition must be a table.')
 	assert(type(def.widget) == "table", 'Definition widget must be a table.')
+	assert(nofs.is_form(form), 'Form must be a Form object')
+  if parent then
+		assert(nofs.is_item(parent), 'Parent must be an Item object')
+	end
 
 	-- Instanciation
 	local item = {
@@ -48,13 +52,17 @@ function Item:new(form, parent, id, def)
 		item.parent = parent
 	end
 
+	-- TODO: Use a Form method that checks for item id unicity ?
+	form.ids[id] = item
+	if def.widget.componants then
+		for _, componant in ipairs(def.widget.componants) do
+			form.ids[id..'.'..componant] = item
+		end
+	end
+
 	item:call('init')
 
 	return item
-end
-
-function Item:get_id()
-	return self.id
 end
 
 -- Method that launches functions :)
@@ -116,7 +124,7 @@ function Item:get_context(key)
 end
 
 function Item:set_context(key, value)
-	local context = self:get_context()
+	local context = self.form:get_context(self)
 	context[key] = value
 end
 

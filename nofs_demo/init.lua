@@ -69,7 +69,9 @@ local inspector_form = {
 	},
 	{ type = 'tab', label = 'meta', layout = 'vertical',
 		{ type = 'label', height = 1, width = 6, label = "Metadata:" },
+		{ type = 'pager', connected_to = 'metabox' },
 		{ type = 'vbox',
+		  id = 'metabox',
 			max_items = 3,
 			overflow = 'scrollbar',
 			{
@@ -84,6 +86,8 @@ local inspector_form = {
 								data[#data+1] = { key = key, value = value}
 							end
 						end
+						data[#data+1] = { key = 'toto', value = 'titi'}
+						data[#data+1] = { key = 'tata', value = 'tutu'}
 						return data
 					end,
 				{ type = 'label', width = 2,

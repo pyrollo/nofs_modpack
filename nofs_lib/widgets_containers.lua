@@ -108,7 +108,7 @@ local function render_container(item)
 	local max_items = item:get_attribute('max_items')
 	local max_index = 1
 	if max_items then
-		max_index = math.max(#item - max_items, 1)
+		max_index = math.max(#item - max_items + 1, 1)
 	end
 	item:set_context('min_index', 1)
 	item:set_context('max_index', max_index)
@@ -128,13 +128,13 @@ local function render_container(item)
 -- TODO: Revoir ça, car il faut que l'id de la scrollbar soit unique et déclaré niveau form.
 -- Il faut peut être passer par une méthode côté form?
 -- Ensuite connected_to doit prendre le def.ID et s'arranger avec l'instance
-	local scrollbar = nofs.new_item(item.form, item, item:get_id()..'.scrollbar',
-	 {
-			id = item:get_id()..'.scrollbar',
+
+		local scrollbar = nofs.new_item(item.form, item, item.id..'.scrollbar', {
+			id = item.id..'.scrollbar',
 			type = 'scrollbar',
 			widget = nofs.get_widget('scrollbar'),
 			layout = item.def.widget.layout,
-			connected_to = item:get_id(),
+			connected_to = item.id,
 		})
 
 		if item.def.layout == 'horizontal' then
@@ -192,7 +192,7 @@ nofs.register_widget("form", {
 				end
 
 				extra = extra..string.format('tabheader[0,0;%s;%s;%s;false;true]',
-					item:get_id(), table.concat(tabs, ','), item:get_context().tab or 1)
+					item.id, table.concat(tabs, ','), item:get_context().tab or 1)
 			end
 
 			return nofs.fs_element_string('size', item.geometry)

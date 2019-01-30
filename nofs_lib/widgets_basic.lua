@@ -83,17 +83,17 @@ nofs.register_widget("button", {
 
 			if a_item ~= "" then
 				return nofs.fs_element_string('item_image_button',
-					item.geometry, fsesc(a_item), item:get_id(),
+					item.geometry, fsesc(a_item), item.id,
 					fsesc(item:get_attribute('label')))
 			else
 				-- Using image buttons because normal buttons does not size vertically
 				if item.def.exit == true then
 					return nofs.fs_element_string('image_button_exit',
-						item.geometry, fsesc(a_image), item:get_id(),
+						item.geometry, fsesc(a_image), item.id,
 						fsesc(item:get_attribute('label')))
 				else
 					return nofs.fs_element_string('image_button',
-						item.geometry, fsesc(a_image), item:get_id(),
+						item.geometry, fsesc(a_image), item.id,
 						fsesc(item:get_attribute('label')))
 				end
 			end
@@ -120,10 +120,10 @@ nofs.register_widget("field", {
 	render = function(item)
 		-- Render
 		if item.def.hidden == true then
-			return nofs.fs_element_string('pwdfield', item.geometry, item:get_id(),
+			return nofs.fs_element_string('pwdfield', item.geometry, item.id,
 				fsesc(item:get_attribute('value')))
 		else
-			return nofs.fs_element_string('field', item.geometry, item:get_id(),
+			return nofs.fs_element_string('field', item.geometry, item.id,
 				fsesc(item:get_attribute('label')), fsesc(item:get_attribute('value')))
 		end
 	end,
@@ -159,7 +159,7 @@ nofs.register_widget("textarea", {
 	end,
 	render = function(item)
 		return nofs.fs_element_string('textarea',
-			item.geometry, item:get_id(), fsesc(item:get_attribute('label')),
+			item.geometry, item.id, fsesc(item:get_attribute('label')),
 			fsesc(item:get_attribute('value')))
 	end,
 	save = function(item)
@@ -193,7 +193,7 @@ nofs.register_widget("checkbox", {
 		end,
 	render = function(item)
 			return nofs.fs_element_string('checkbox',
-				item.geometry, item:get_id(),
+				item.geometry, item.id,
 				fsesc(item:get_attribute('label')),
 				item:get_attribute('value') and "true" or "false")
 		end,
